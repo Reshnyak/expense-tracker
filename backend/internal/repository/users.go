@@ -48,3 +48,25 @@ func (r *userRepo) UpsertByEmail(ctx context.Context, email, name string) (domai
 	}
 	return userFromSQLC(u), nil
 }
+
+func (r *userRepo) CreateLocal(ctx context.Context, email, name, passwordHash string) (domain.User, error) {
+	hash := passwordHash
+	u, err := r.q.CreateLocalUser(ctx, sqlc.CreateLocalUserParams{
+		Email:        email,
+		Name:         name,
+		PasswordHash: &hash,
+	})
+	if err != nil {
+		return domain.User{}, mapErr(err)
+	}
+	return userFromSQLC(u), nil
+}
+
+func (r *userRepo) LocalCredentials(ctx context.Context, email string) (domain.User, string, error) {
+	u, err := r.q.GetLocalCredentialsByEmail(ctx, email)
+	if err != nil {
+		return domain.User{}, "", mapErr(err)
+	}
+	// password_hash is guaranteed non-NULL by the query's WHERE clause.
+	return userFromSQLC(u), *u.PasswordHash, nil
+}

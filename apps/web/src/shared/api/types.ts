@@ -5,6 +5,14 @@ type Schemas = components["schemas"];
 export type ApiError = Schemas["Error"];
 export type TokenPair = Schemas["TokenPair"];
 export type User = Schemas["User"];
+export type RegisterInput = Schemas["RegisterInput"];
+export type LoginInput = Schemas["LoginInput"];
+
+/**
+ * Body of `POST /api/v1/auth/dev-login`. Hand-written: the OpenAPI spec inlines
+ * this schema on the path, so `openapi-typescript` produces no named component.
+ */
+export type DevLoginInput = { email: string; name?: string };
 export type Space = Schemas["Space"];
 export type SpaceInput = Schemas["SpaceInput"];
 export type SpaceMember = Schemas["SpaceMember"];

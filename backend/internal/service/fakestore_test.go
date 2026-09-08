@@ -12,22 +12,24 @@ import (
 // fakeStore is an in-memory domain.Store for service unit tests. WithTx runs the
 // callback against the same store (no isolation) — good enough for logic tests.
 type fakeStore struct {
-	users    map[uuid.UUID]domain.User
-	spaces   map[uuid.UUID]domain.Space
-	members  map[uuid.UUID][]domain.SpaceMember // spaceID -> members
-	cats     map[uuid.UUID]domain.Category      // categoryID -> category
-	expenses map[uuid.UUID]domain.Expense       // expenseID -> expense (soft-deleted removed)
-	tokens   map[string]*domain.RefreshToken    // hash -> token
+	users     map[uuid.UUID]domain.User
+	spaces    map[uuid.UUID]domain.Space
+	members   map[uuid.UUID][]domain.SpaceMember // spaceID -> members
+	cats      map[uuid.UUID]domain.Category      // categoryID -> category
+	expenses  map[uuid.UUID]domain.Expense       // expenseID -> expense (soft-deleted removed)
+	tokens    map[string]*domain.RefreshToken    // hash -> token
+	passwords map[uuid.UUID]string               // userID -> bcrypt hash (local accounts)
 }
 
 func newFakeStore() *fakeStore {
 	return &fakeStore{
-		users:    map[uuid.UUID]domain.User{},
-		spaces:   map[uuid.UUID]domain.Space{},
-		members:  map[uuid.UUID][]domain.SpaceMember{},
-		cats:     map[uuid.UUID]domain.Category{},
-		expenses: map[uuid.UUID]domain.Expense{},
-		tokens:   map[string]*domain.RefreshToken{},
+		users:     map[uuid.UUID]domain.User{},
+		spaces:    map[uuid.UUID]domain.Space{},
+		members:   map[uuid.UUID][]domain.SpaceMember{},
+		cats:      map[uuid.UUID]domain.Category{},
+		expenses:  map[uuid.UUID]domain.Expense{},
+		tokens:    map[string]*domain.RefreshToken{},
+		passwords: map[uuid.UUID]string{},
 	}
 }
 
@@ -87,6 +89,31 @@ func (r *fakeUsers) UpsertByEmail(_ context.Context, email, name string) (domain
 	u := domain.User{ID: uuid.New(), Email: email, Name: name, CreatedAt: time.Now()}
 	r.users[u.ID] = u
 	return u, nil
+}
+
+func (r *fakeUsers) CreateLocal(_ context.Context, email, name, passwordHash string) (domain.User, error) {
+	for _, u := range r.users {
+		if u.Email == email {
+			return domain.User{}, domain.ErrConflict
+		}
+	}
+	u := domain.User{ID: uuid.New(), Email: email, Name: name, CreatedAt: time.Now()}
+	r.users[u.ID] = u
+	r.passwords[u.ID] = passwordHash
+	return u, nil
+}
+
+func (r *fakeUsers) LocalCredentials(_ context.Context, email string) (domain.User, string, error) {
+	for _, u := range r.users {
+		if u.Email == email {
+			hash, ok := r.passwords[u.ID]
+			if !ok {
+				return domain.User{}, "", domain.ErrNotFound
+			}
+			return u, hash, nil
+		}
+	}
+	return domain.User{}, "", domain.ErrNotFound
 }
 
 // --- spaces ------------------------------------------------------------------

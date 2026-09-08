@@ -27,6 +27,15 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (User, error)
 	UpsertFromGoogle(ctx context.Context, p GoogleUpsert) (User, error)
 	UpsertByEmail(ctx context.Context, email, name string) (User, error)
+
+	// CreateLocal inserts an email + password account. A duplicate email
+	// returns ErrConflict.
+	CreateLocal(ctx context.Context, email, name, passwordHash string) (User, error)
+	// LocalCredentials returns the user and their bcrypt hash for password
+	// login. It returns ErrNotFound both when no user has that email and when
+	// the user has no password set (a Google-only account) — callers must not
+	// distinguish the two.
+	LocalCredentials(ctx context.Context, email string) (User, string, error)
 }
 
 type SpaceRepository interface {

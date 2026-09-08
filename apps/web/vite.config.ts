@@ -17,6 +17,9 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Fail loudly instead of drifting to another port: the backend's CORS origin
+    // and GOOGLE_OAUTH_REDIRECT_URL are pinned to localhost:5173.
+    strictPort: true,
     proxy: {
       // Forward API calls to the Go backend during development.
       "/api": {

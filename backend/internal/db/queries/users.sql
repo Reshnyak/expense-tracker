@@ -23,3 +23,11 @@ SET name = EXCLUDED.name,
     avatar_url = EXCLUDED.avatar_url,
     updated_at = now()
 RETURNING *;
+
+-- name: CreateLocalUser :one
+INSERT INTO users (email, name, password_hash)
+VALUES ($1, $2, $3)
+RETURNING *;
+
+-- name: GetLocalCredentialsByEmail :one
+SELECT * FROM users WHERE email = $1 AND password_hash IS NOT NULL;

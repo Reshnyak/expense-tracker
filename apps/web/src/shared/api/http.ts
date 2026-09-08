@@ -1,7 +1,8 @@
 import { getAccessToken, setTokens, clearTokens, getRefreshToken } from "@/shared/auth/tokenStore";
 import type { ApiError, TokenPair } from "./types";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+/** Base path for every API call. Application code passes paths like `/v1/...`. */
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 export class HttpError extends Error {
   constructor(
@@ -27,7 +28,7 @@ async function rawRequest<T>(path: string, opts: RequestOptions): Promise<T> {
   if (token) headers.Authorization = `Bearer ${token}`;
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: opts.method ?? "GET",
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
@@ -54,7 +55,7 @@ function tryRefresh(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = (async () => {
     try {
-      const res = await fetch(`${BASE_URL}/v1/auth/refresh`, {
+      const res = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: getRefreshToken() }),

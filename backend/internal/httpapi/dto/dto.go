@@ -26,6 +26,19 @@ type DevLoginInput struct {
 	Name  string `json:"name" binding:"omitempty,max=120"`
 }
 
+// RegisterInput is the body for POST /api/v1/auth/register.
+type RegisterInput struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8,max=72"`
+	Name     string `json:"name" binding:"omitempty,max=120"`
+}
+
+// LoginInput is the body for POST /api/v1/auth/login.
+type LoginInput struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
 type User struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`

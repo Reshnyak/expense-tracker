@@ -42,6 +42,34 @@ func (h *Handlers) DevLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, pair)
 }
 
+// POST /api/v1/auth/register
+func (h *Handlers) Register(c *gin.Context) {
+	var in dto.RegisterInput
+	if !bindJSON(c, &in) {
+		return
+	}
+	pair, err := h.Svc.Register(c.Request.Context(), in.Email, in.Password, in.Name)
+	if err != nil {
+		h.respondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, pair)
+}
+
+// POST /api/v1/auth/login
+func (h *Handlers) Login(c *gin.Context) {
+	var in dto.LoginInput
+	if !bindJSON(c, &in) {
+		return
+	}
+	pair, err := h.Svc.Login(c.Request.Context(), in.Email, in.Password)
+	if err != nil {
+		h.respondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, pair)
+}
+
 // POST /api/v1/auth/refresh
 func (h *Handlers) Refresh(c *gin.Context) {
 	var in dto.RefreshInput

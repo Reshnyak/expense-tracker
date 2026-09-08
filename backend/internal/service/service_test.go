@@ -193,6 +193,69 @@ func TestRefresh_RotatesAndInvalidatesOldToken(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestRegister_IssuesTokensAndLoginWorks(t *testing.T) {
+	ctx := context.Background()
+	svc, _ := newTestService(t, false)
+
+	pair, err := svc.Register(ctx, "Alice@Example.com", "s3cret-password", "Alice")
+	require.NoError(t, err)
+	assert.NotEmpty(t, pair.AccessToken)
+	assert.NotEmpty(t, pair.RefreshToken)
+
+	// email is normalised, so login with a differently-cased address still works
+	loginPair, err := svc.Login(ctx, "alice@example.com", "s3cret-password")
+	require.NoError(t, err)
+	assert.NotEmpty(t, loginPair.AccessToken)
+}
+
+func TestRegister_DuplicateEmailConflicts(t *testing.T) {
+	ctx := context.Background()
+	svc, _ := newTestService(t, false)
+
+	_, err := svc.Register(ctx, "dup@example.com", "s3cret-password", "")
+	require.NoError(t, err)
+
+	_, err = svc.Register(ctx, "dup@example.com", "another-password", "")
+	assert.ErrorIs(t, err, domain.ErrConflict)
+}
+
+func TestRegister_RejectsShortPassword(t *testing.T) {
+	ctx := context.Background()
+	svc, _ := newTestService(t, false)
+
+	_, err := svc.Register(ctx, "weak@example.com", "short", "")
+	assert.ErrorIs(t, err, domain.ErrValidation)
+}
+
+func TestLogin_WrongPasswordIsUnauthorized(t *testing.T) {
+	ctx := context.Background()
+	svc, _ := newTestService(t, false)
+
+	_, err := svc.Register(ctx, "bob@example.com", "correct-password", "")
+	require.NoError(t, err)
+
+	_, err = svc.Login(ctx, "bob@example.com", "wrong-password")
+	assert.ErrorIs(t, err, domain.ErrUnauthorized)
+}
+
+func TestLogin_UnknownEmailIsUnauthorized(t *testing.T) {
+	ctx := context.Background()
+	svc, _ := newTestService(t, false)
+
+	_, err := svc.Login(ctx, "nobody@example.com", "any-password")
+	assert.ErrorIs(t, err, domain.ErrUnauthorized)
+}
+
+func TestLogin_GoogleOnlyAccountIsUnauthorized(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	// a user with no password (created via Google / dev-login)
+	seedUser(fs, "google@example.com")
+
+	_, err := svc.Login(ctx, "google@example.com", "guessed-password")
+	assert.ErrorIs(t, err, domain.ErrUnauthorized)
+}
+
 func TestCreateCategory_DuplicateNameConflicts(t *testing.T) {
 	ctx := context.Background()
 	svc, fs := newTestService(t, false)

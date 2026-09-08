@@ -10,17 +10,17 @@ export function SpacesPage() {
   return (
     <section>
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Your spaces</h2>
+        <h2 className="text-lg font-semibold">Ваши пространства</h2>
         <div className="text-sm text-gray-500">
           {user?.email}
           <button onClick={logout} className="ml-3 text-blue-600 hover:underline">
-            Sign out
+            Выйти
           </button>
         </div>
       </div>
 
-      {isLoading && <p className="mt-4 text-gray-500">Loading…</p>}
-      {error && <p className="mt-4 text-red-600">Failed to load spaces.</p>}
+      {isLoading && <p className="mt-4 text-gray-500">Загрузка…</p>}
+      {error && <p className="mt-4 text-red-600">Не удалось загрузить пространства.</p>}
 
       <ul className="mt-4 divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
         {spaces?.map((s) => (
@@ -32,7 +32,7 @@ export function SpacesPage() {
           </li>
         ))}
         {spaces?.length === 0 && (
-          <li className="px-4 py-3 text-gray-500">No spaces yet.</li>
+          <li className="px-4 py-3 text-gray-500">Пока нет пространств.</li>
         )}
       </ul>
     </section>

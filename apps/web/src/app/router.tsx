@@ -1,14 +1,31 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import App from "@/App";
+import { RedirectIfAuthed } from "@/shared/auth/RedirectIfAuthed";
 import { RequireAuth } from "@/shared/auth/RequireAuth";
 import { LoginPage } from "@/pages/LoginPage";
+import { RegisterPage } from "@/pages/RegisterPage";
 import { AuthCallbackPage } from "@/pages/AuthCallbackPage";
 import { SpacesPage } from "@/pages/SpacesPage";
 import { ExpensesPage } from "@/pages/ExpensesPage";
 
 export const router = createBrowserRouter([
-  { path: "/login", element: <LoginPage /> },
+  {
+    path: "/login",
+    element: (
+      <RedirectIfAuthed>
+        <LoginPage />
+      </RedirectIfAuthed>
+    ),
+  },
+  {
+    path: "/register",
+    element: (
+      <RedirectIfAuthed>
+        <RegisterPage />
+      </RedirectIfAuthed>
+    ),
+  },
   { path: "/auth/callback", element: <AuthCallbackPage /> },
   {
     path: "/",

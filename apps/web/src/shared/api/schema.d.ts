@@ -43,6 +43,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a local account (email + password) and sign in */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RegisterInput"];
+                };
+            };
+            responses: {
+                /** @description Account created, token pair issued */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TokenPair"];
+                    };
+                };
+                409: components["responses"]["Conflict"];
+                /** @description Invalid input */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign in with email + password */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LoginInput"];
+                };
+            };
+            responses: {
+                /** @description Token pair issued */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TokenPair"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/dev-login": {
         parameters: {
             query?: never;
@@ -738,6 +829,17 @@ export interface components {
             /** @description Access token lifetime in seconds */
             expires_in: number;
         };
+        RegisterInput: {
+            /** Format: email */
+            email: string;
+            password: string;
+            name?: string;
+        };
+        LoginInput: {
+            /** Format: email */
+            email: string;
+            password: string;
+        };
         User: {
             /** Format: uuid */
             id: string;
@@ -852,6 +954,15 @@ export interface components {
         };
         /** @description Resource not found */
         NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description The write violates a uniqueness constraint */
+        Conflict: {
             headers: {
                 [name: string]: unknown;
             };

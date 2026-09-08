@@ -8,13 +8,13 @@ export default function App() {
       <header className="border-b border-gray-200 bg-white">
         <nav className="mx-auto flex max-w-4xl items-center gap-4 px-4 py-3">
           <Link to="/" className="font-semibold">
-            Expence Tracker
+            Журнал расходов
           </Link>
           <Link
             to="/spaces"
             className={pathname.startsWith("/spaces") ? "text-blue-600" : "text-gray-500"}
           >
-            Spaces
+            Пространства
           </Link>
         </nav>
       </header>

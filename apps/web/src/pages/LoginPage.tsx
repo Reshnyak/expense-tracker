@@ -1,79 +1,252 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
-import { api, HttpError } from "@/shared/api/http";
-import type { TokenPair } from "@/shared/api/types";
+import { startGoogleLogin } from "@/features/auth/oauth";
+import { useDevLogin } from "@/features/auth/useDevLogin";
+import { useLogin } from "@/features/auth/useLogin";
+import { HttpError } from "@/shared/api/http";
 import { useAuth } from "@/shared/auth/AuthContext";
+import { sanitizeRedirect } from "@/shared/auth/redirect";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
+import { Button } from "@/shared/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/shared/ui/card";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface LoginLocationState {
+  from?: { pathname?: string };
+  authError?: string;
+}
 
 export function LoginPage() {
-  const { isAuthenticated, loginWithTokens } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isAuthenticated) navigate("/spaces", { replace: true });
-  }, [isAuthenticated, navigate]);
+  const location = useLocation();
+  const state = location.state as LoginLocationState | null;
+  const redirectTo = sanitizeRedirect(state?.from?.pathname);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-xl font-semibold">Expence Tracker</h1>
-        <p className="mt-2 text-sm text-gray-500">Shared expense journal</p>
-        <a
-          href={`${API_BASE}/v1/auth/google/login?redirect_uri=${encodeURIComponent("/spaces")}`}
-          className="mt-6 inline-block w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-        >
-          Continue with Google
-        </a>
-        {import.meta.env.DEV && <DevLogin onTokens={loginWithTokens} />}
-      </div>
+    <div className="flex min-h-screen items-center justify-center bg-muted p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>
+            <h1 className="text-xl">Вход</h1>
+          </CardTitle>
+          <CardDescription>Общий журнал расходов</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {state?.authError && (
+            <Alert variant="destructive">
+              <AlertDescription>{state.authError}</AlertDescription>
+            </Alert>
+          )}
+
+          <CredentialsForm />
+
+          <div className="flex items-center gap-3">
+            <span className="bg-border h-px flex-1" />
+            <span className="text-muted-foreground text-xs">или</span>
+            <span className="bg-border h-px flex-1" />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => startGoogleLogin(redirectTo)}
+          >
+            Войти через Google
+          </Button>
+
+          {import.meta.env.DEV && <DevLoginForm />}
+        </CardContent>
+        <CardFooter className="justify-center">
+          <p className="text-muted-foreground text-sm">
+            Нет аккаунта?{" "}
+            <Link to="/register" className="text-foreground underline underline-offset-4">
+              Зарегистрируйтесь
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
 
-/** Local-only shortcut: mints tokens for any email via POST /v1/auth/dev-login. */
-function DevLogin({ onTokens }: { onTokens: (access: string, refresh: string) => void }) {
-  const [email, setEmail] = useState("dev@example.com");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+/**
+ * Email + password sign-in. Post-login navigation (honouring `location.state.from`)
+ * is handled by the `RedirectIfAuthed` wrapper once `loginWithTokens` flips the
+ * auth state.
+ */
+function CredentialsForm() {
+  const { loginWithTokens } = useAuth();
+  const login = useLogin();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  async function submit(e: React.FormEvent) {
+  const serverError = login.isError
+    ? login.error instanceof HttpError && login.error.status === 401
+      ? "Неверный email или пароль."
+      : "Не удалось войти. Попробуйте позже."
+    : null;
+
+  function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      const pair = await api.post<TokenPair>("/v1/auth/dev-login", { email });
-      onTokens(pair.access_token, pair.refresh_token);
-    } catch (err) {
-      setError(
-        err instanceof HttpError && err.status === 404
-          ? "dev-login is disabled (server not in local env)"
-          : "dev-login failed",
-      );
-    } finally {
-      setBusy(false);
-    }
+    const next: { email?: string; password?: string } = {};
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) next.email = "Укажите email.";
+    else if (!EMAIL_RE.test(trimmedEmail)) next.email = "Введите корректный email.";
+    if (!password) next.password = "Введите пароль.";
+    setErrors(next);
+    if (next.email || next.password) return;
+
+    login.mutate(
+      { email: trimmedEmail, password },
+      {
+        onSuccess: (pair) => loginWithTokens(pair.access_token, pair.refresh_token),
+      },
+    );
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 border-t border-gray-100 pt-4 text-left">
-      <label className="text-xs font-medium text-gray-500">Dev login (local only)</label>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="mt-1 w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-        placeholder="you@example.com"
-      />
-      <button
-        type="submit"
-        disabled={busy}
-        className="mt-2 w-full rounded-md border border-gray-300 px-4 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50"
-      >
-        Sign in as this email
-      </button>
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+    <form onSubmit={submit} noValidate className="flex flex-col gap-3">
+      {serverError && (
+        <Alert variant="destructive">
+          <AlertDescription>{serverError}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="login-email">Email</Label>
+        <Input
+          id="login-email"
+          type="email"
+          name="email"
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setErrors((p) => ({ ...p, email: undefined }));
+          }}
+          aria-invalid={errors.email ? true : undefined}
+          aria-describedby={errors.email ? "login-email-error" : undefined}
+        />
+        {errors.email && (
+          <p id="login-email-error" role="alert" className="text-destructive text-xs">
+            {errors.email}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="login-password">Пароль</Label>
+        <Input
+          id="login-password"
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setErrors((p) => ({ ...p, password: undefined }));
+          }}
+          aria-invalid={errors.password ? true : undefined}
+          aria-describedby={errors.password ? "login-password-error" : undefined}
+        />
+        {errors.password && (
+          <p id="login-password-error" role="alert" className="text-destructive text-xs">
+            {errors.password}
+          </p>
+        )}
+      </div>
+
+      <Button type="submit" className="w-full" disabled={login.isPending} aria-busy={login.isPending}>
+        {login.isPending ? "Входим…" : "Войти"}
+      </Button>
+    </form>
+  );
+}
+
+/** Локальный шорткат: выдаёт токены по любому email через POST /v1/auth/dev-login. */
+function DevLoginForm() {
+  const { loginWithTokens } = useAuth();
+  const devLogin = useDevLogin();
+  const [email, setEmail] = useState("dev@example.com");
+  const [fieldError, setFieldError] = useState<string | null>(null);
+
+  const serverError = devLogin.isError
+    ? devLogin.error instanceof HttpError && devLogin.error.status === 404
+      ? "dev-login отключён (сервер не в локальном окружении)."
+      : "dev-login не сработал. Проверьте, что API запущен."
+    : null;
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setFieldError("Укажите email.");
+      return;
+    }
+    if (!EMAIL_RE.test(trimmed)) {
+      setFieldError("Введите корректный email.");
+      return;
+    }
+    setFieldError(null);
+    devLogin.mutate(
+      { email: trimmed },
+      {
+        onSuccess: (pair) => loginWithTokens(pair.access_token, pair.refresh_token),
+      },
+    );
+  }
+
+  const errorText = fieldError ?? serverError;
+
+  return (
+    <form onSubmit={submit} noValidate className="border-t pt-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="dev-email" className="text-muted-foreground text-xs">
+          Вход для разработки (только локально)
+        </Label>
+        <Input
+          id="dev-email"
+          type="email"
+          name="dev-email"
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setFieldError(null);
+          }}
+          aria-invalid={errorText ? true : undefined}
+          aria-describedby={errorText ? "dev-login-error" : undefined}
+          placeholder="you@example.com"
+        />
+        <Button
+          type="submit"
+          variant="outline"
+          className="w-full"
+          disabled={devLogin.isPending}
+          aria-busy={devLogin.isPending}
+        >
+          {devLogin.isPending ? "Входим…" : "Войти под этим email"}
+        </Button>
+        {errorText && (
+          <p id="dev-login-error" role="alert" className="text-destructive text-xs">
+            {errorText}
+          </p>
+        )}
+      </div>
     </form>
   );
 }

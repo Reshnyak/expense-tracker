@@ -52,6 +52,8 @@ func NewRouter(d Deps) http.Handler {
 
 	authGroup := v1.Group("/auth")
 	{
+		authGroup.POST("/register", h.Register)
+		authGroup.POST("/login", h.Login)
 		authGroup.GET("/google/login", h.GoogleLogin)
 		authGroup.GET("/google/callback", h.GoogleCallback)
 		authGroup.POST("/refresh", h.Refresh)

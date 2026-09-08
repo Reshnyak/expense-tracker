@@ -81,6 +81,52 @@ func (s *Service) DevLogin(ctx context.Context, email, name string) (dto.TokenPa
 	return s.issuePair(ctx, s.store, user.ID)
 }
 
+// Register creates a local (email + password) account and signs it in.
+func (s *Service) Register(ctx context.Context, email, password, name string) (dto.TokenPair, error) {
+	email = strings.TrimSpace(strings.ToLower(email))
+	if email == "" {
+		return dto.TokenPair{}, fmt.Errorf("%w: email is required", domain.ErrValidation)
+	}
+	if len(password) < 8 || len(password) > auth.MaxPasswordBytes {
+		return dto.TokenPair{}, fmt.Errorf(
+			"%w: password must be 8-%d characters", domain.ErrValidation, auth.MaxPasswordBytes)
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		name = email
+	}
+	hash, err := auth.HashPassword(password)
+	if err != nil {
+		return dto.TokenPair{}, err
+	}
+	user, err := s.store.Users().CreateLocal(ctx, email, name, hash)
+	if err != nil {
+		if errors.Is(err, domain.ErrConflict) {
+			return dto.TokenPair{}, fmt.Errorf("%w: email already registered", domain.ErrConflict)
+		}
+		return dto.TokenPair{}, err
+	}
+	return s.issuePair(ctx, s.store, user.ID)
+}
+
+// Login verifies an email + password and returns a fresh token pair. A missing
+// user, a Google-only account and a wrong password all yield the same error.
+func (s *Service) Login(ctx context.Context, email, password string) (dto.TokenPair, error) {
+	email = strings.TrimSpace(strings.ToLower(email))
+	user, hash, err := s.store.Users().LocalCredentials(ctx, email)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			auth.CheckDummyPassword(password) // equalise response timing
+			return dto.TokenPair{}, fmt.Errorf("%w: invalid email or password", domain.ErrUnauthorized)
+		}
+		return dto.TokenPair{}, err
+	}
+	if !auth.CheckPassword(hash, password) {
+		return dto.TokenPair{}, fmt.Errorf("%w: invalid email or password", domain.ErrUnauthorized)
+	}
+	return s.issuePair(ctx, s.store, user.ID)
+}
+
 // Refresh rotates a refresh token: the presented token is revoked and a new pair
 // is issued, all in one transaction.
 func (s *Service) Refresh(ctx context.Context, raw string) (dto.TokenPair, error) {

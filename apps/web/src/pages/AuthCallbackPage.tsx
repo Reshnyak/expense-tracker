@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
-import { api } from "@/shared/api/http";
-import type { TokenPair } from "@/shared/api/types";
+import { describeOAuthError, readCallbackParams } from "@/features/auth/oauth";
+import { useGoogleCallback } from "@/features/auth/useGoogleCallback";
 import { useAuth } from "@/shared/auth/AuthContext";
+import { consumePostLoginRedirect } from "@/shared/auth/redirect";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
+import { Button } from "@/shared/ui/button";
+import { Card, CardContent } from "@/shared/ui/card";
 
 /**
  * Google redirects here (see GOOGLE_OAUTH_REDIRECT_URL). We hand the `code` +
@@ -13,6 +18,7 @@ export function AuthCallbackPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { loginWithTokens } = useAuth();
+  const callback = useGoogleCallback();
   const [error, setError] = useState<string | null>(null);
   const ran = useRef(false);
 
@@ -20,43 +26,50 @@ export function AuthCallbackPage() {
     if (ran.current) return;
     ran.current = true;
 
-    const code = params.get("code");
-    const state = params.get("state");
-    const oauthError = params.get("error");
+    const { code, state, error: providerError } = readCallbackParams(params);
 
-    if (oauthError) {
-      setError(`Google sign-in was cancelled (${oauthError}).`);
+    if (providerError) {
+      setError(describeOAuthError(providerError));
       return;
     }
     if (!code || !state) {
-      setError("Missing authorization code.");
+      setError("Не передан код авторизации.");
       return;
     }
 
-    const qs = new URLSearchParams({ code, state }).toString();
-    api
-      .get<TokenPair>(`/v1/auth/google/callback?${qs}`)
-      .then((pair) => {
-        loginWithTokens(pair.access_token, pair.refresh_token);
-        navigate("/spaces", { replace: true });
-      })
-      .catch(() => setError("Could not complete sign-in. Please try again."));
-  }, [params, loginWithTokens, navigate]);
+    callback.mutate(
+      { code, state },
+      {
+        onSuccess: (pair) => {
+          loginWithTokens(pair.access_token, pair.refresh_token);
+          navigate(consumePostLoginRedirect(), { replace: true });
+        },
+        onError: () => setError("Не удалось завершить вход. Попробуйте ещё раз."),
+      },
+    );
+  }, [params, callback, loginWithTokens, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm">
-        {error ? (
-          <>
-            <p className="text-sm text-red-600">{error}</p>
-            <Link to="/login" className="mt-4 inline-block text-blue-600 hover:underline">
-              Back to sign in
-            </Link>
-          </>
-        ) : (
-          <p className="text-sm text-gray-500">Signing you in…</p>
-        )}
-      </div>
+    <div className="flex min-h-screen items-center justify-center bg-muted p-4">
+      <Card className="w-full max-w-sm">
+        <CardContent>
+          {error ? (
+            <div className="flex flex-col gap-4">
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/login">Вернуться ко входу</Link>
+              </Button>
+            </div>
+          ) : (
+            <p className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              Входим…
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
