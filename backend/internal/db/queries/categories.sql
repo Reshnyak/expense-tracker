@@ -1,0 +1,12 @@
+-- name: CreateCategory :one
+INSERT INTO categories (space_id, name, color)
+VALUES ($1, $2, $3)
+RETURNING *;
+
+-- name: ListCategories :many
+SELECT * FROM categories
+WHERE space_id = $1
+ORDER BY name;
+
+-- name: GetCategory :one
+SELECT * FROM categories WHERE id = $1 AND space_id = $2;

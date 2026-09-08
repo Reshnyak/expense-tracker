@@ -1,0 +1,8 @@
+app_env: prod
+
+http:
+  web_origin: ""   # set via WEB_ORIGIN
+
+log:
+  level: "info"
+  format: "json"

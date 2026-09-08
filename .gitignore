@@ -1,0 +1,29 @@
+# --- OS / editors ---
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# --- env ---
+.env
+.env.local
+*.local
+
+# --- Go ---
+/backend/bin/
+/backend/coverage.out
+/backend/coverage.html
+
+# --- Node ---
+node_modules/
+/apps/web/dist/
+/apps/web/.vite/
+*.tsbuildinfo
+pnpm-debug.log*
+npm-debug.log*
+
+# --- generated ---
+# sqlc output — regenerated via `make sqlc`, kept out of VCS
+/backend/internal/db/sqlc/*.go
+# NOTE: apps/web/src/shared/api/schema.d.ts IS committed (placeholder that
+# `make openapi` overwrites) so a fresh checkout type-checks without codegen.

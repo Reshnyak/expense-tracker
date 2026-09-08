@@ -1,0 +1,465 @@
+openapi: 3.1.0
+info:
+  title: Expence Tracker API
+  version: 0.1.0
+  description: >
+    Shared expense journal. Users sign in with Google, create spaces, invite
+    members, and record expenses. Balances are computed on the fly.
+servers:
+  - url: http://localhost:8080
+    description: Local dev
+
+tags:
+  - name: health
+  - name: auth
+  - name: spaces
+  - name: categories
+  - name: expenses
+  - name: balances
+
+paths:
+  /healthz:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: ok }
+
+  /api/v1/auth/google/login:
+    get:
+      tags: [auth]
+      summary: Start Google OAuth flow
+      security: []
+      parameters:
+        - name: redirect_uri
+          in: query
+          required: false
+          schema: { type: string }
+          description: Where to send the browser after successful login.
+      responses:
+        "302":
+          description: Redirect to Google consent screen
+
+  /api/v1/auth/google/callback:
+    get:
+      tags: [auth]
+      summary: Google OAuth callback
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string }
+        - name: state
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Token pair issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenPair" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [auth]
+      summary: Exchange a refresh token for a new token pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        "200":
+          description: New token pair
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenPair" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke the current refresh token
+      responses:
+        "204": { description: Logged out }
+
+  /api/v1/me:
+    get:
+      tags: [auth]
+      summary: Current user
+      responses:
+        "200":
+          description: The authenticated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/spaces:
+    get:
+      tags: [spaces]
+      summary: List spaces the current user belongs to
+      responses:
+        "200":
+          description: Spaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Space" }
+    post:
+      tags: [spaces]
+      summary: Create a space
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SpaceInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Space" }
+
+  /api/v1/spaces/{spaceId}:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      tags: [spaces]
+      summary: Get a space
+      responses:
+        "200":
+          description: Space
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Space" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/spaces/{spaceId}/members:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      tags: [spaces]
+      summary: List members of a space
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SpaceMember" }
+    post:
+      tags: [spaces]
+      summary: Add a member by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+                role: { $ref: "#/components/schemas/MemberRole" }
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SpaceMember" }
+
+  /api/v1/spaces/{spaceId}/categories:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      tags: [categories]
+      summary: List categories
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Category" }
+    post:
+      tags: [categories]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+
+  /api/v1/spaces/{spaceId}/expenses:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      tags: [expenses]
+      summary: List expenses in a space
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Expenses
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExpenseList" }
+    post:
+      tags: [expenses]
+      summary: Record an expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExpenseInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Expense" }
+
+  /api/v1/spaces/{spaceId}/expenses/{expenseId}:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+      - $ref: "#/components/parameters/ExpenseId"
+    get:
+      tags: [expenses]
+      summary: Get an expense
+      responses:
+        "200":
+          description: Expense
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Expense" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [expenses]
+      summary: Update an expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExpenseInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Expense" }
+    delete:
+      tags: [expenses]
+      summary: Delete an expense (soft delete)
+      responses:
+        "204": { description: Deleted }
+
+  /api/v1/spaces/{spaceId}/balances:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      tags: [balances]
+      summary: Per-member balance for a space
+      responses:
+        "200":
+          description: Balances
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Balance" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    SpaceId:
+      name: spaceId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ExpenseId:
+      name: expenseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token, expires_in]
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expires_in: { type: integer, description: Access token lifetime in seconds }
+
+    User:
+      type: object
+      required: [id, email, name, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        avatar_url: { type: [string, "null"] }
+        created_at: { type: string, format: date-time }
+
+    MemberRole:
+      type: string
+      enum: [owner, member]
+
+    Space:
+      type: object
+      required: [id, name, currency, owner_id, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        owner_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+
+    SpaceInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        currency: { type: string, minLength: 3, maxLength: 3, default: "USD" }
+
+    SpaceMember:
+      type: object
+      required: [space_id, user_id, role, joined_at, user]
+      properties:
+        space_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        role: { $ref: "#/components/schemas/MemberRole" }
+        joined_at: { type: string, format: date-time }
+        user: { $ref: "#/components/schemas/User" }
+
+    Category:
+      type: object
+      required: [id, space_id, name, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        space_id: { type: string, format: uuid }
+        name: { type: string }
+        color: { type: [string, "null"] }
+        created_at: { type: string, format: date-time }
+
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        color: { type: string, pattern: "^#[0-9a-fA-F]{6}$" }
+
+    Expense:
+      type: object
+      required:
+        [id, space_id, payer_id, amount_cents, currency, spent_at, created_by, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        space_id: { type: string, format: uuid }
+        payer_id: { type: string, format: uuid }
+        category_id: { type: [string, "null"], format: uuid }
+        amount_cents: { type: integer, minimum: 1, description: Amount in minor units }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        description: { type: [string, "null"] }
+        spent_at: { type: string, format: date }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ExpenseInput:
+      type: object
+      required: [payer_id, amount_cents, spent_at]
+      properties:
+        payer_id: { type: string, format: uuid }
+        category_id: { type: string, format: uuid }
+        amount_cents: { type: integer, minimum: 1 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        description: { type: string, maxLength: 500 }
+        spent_at: { type: string, format: date }
+
+    ExpenseList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Expense" }
+        next_cursor: { type: [string, "null"] }
+
+    Balance:
+      type: object
+      required: [user_id, paid_cents, share_cents, net_cents]
+      properties:
+        user_id: { type: string, format: uuid }
+        paid_cents: { type: integer, description: Total this member paid }
+        share_cents: { type: integer, description: This member's equal share of all expenses }
+        net_cents: { type: integer, description: paid_cents - share_cents (positive = is owed) }
+
+security:
+  - bearerAuth: []
