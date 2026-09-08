@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/reshnyakdg/expence-tracker/backend/internal/auth"
 	"github.com/reshnyakdg/expence-tracker/backend/internal/config"
@@ -56,13 +57,21 @@ func run() error {
 		cfg.GoogleOAuth.ClientSecret,
 		cfg.GoogleOAuth.RedirectURL,
 	)
+	stateCodec := auth.NewStateCodec(cfg.JWT.Secret, 10*time.Minute)
+
+	devAuth := cfg.AppEnv == "local"
+	if devAuth {
+		log.Warn("dev-login enabled (app_env=local): POST /api/v1/auth/dev-login is open")
+	}
 
 	handler := httpapi.NewRouter(httpapi.Deps{
 		DB:        pool,
 		Issuer:    issuer,
 		Google:    google,
+		State:     stateCodec,
 		Log:       log,
 		WebOrigin: cfg.HTTP.WebOrigin,
+		DevAuth:   devAuth,
 	})
 
 	srv := &http.Server{

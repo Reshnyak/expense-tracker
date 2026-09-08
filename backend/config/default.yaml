@@ -22,7 +22,9 @@ jwt:
 google_oauth:
   client_id: ""
   client_secret: ""
-  redirect_url: "http://localhost:8080/api/v1/auth/google/callback"
+  # Google redirects here (the SPA callback route); the SPA then calls
+  # /api/v1/auth/google/callback with the code+state.
+  redirect_url: "http://localhost:5173/auth/callback"
 
 log:
   level: "info"

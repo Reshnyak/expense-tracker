@@ -16,6 +16,16 @@ type TokenPair struct {
 	ExpiresIn    int    `json:"expires_in"`
 }
 
+type RefreshInput struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+// DevLoginInput is the body for POST /api/v1/auth/dev-login (local env only).
+type DevLoginInput struct {
+	Email string `json:"email" binding:"required,email"`
+	Name  string `json:"name" binding:"omitempty,max=120"`
+}
+
 type User struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
@@ -55,12 +65,14 @@ type Category struct {
 	SpaceID   string    `json:"space_id"`
 	Name      string    `json:"name"`
 	Color     *string   `json:"color"`
+	Icon      *string   `json:"icon"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type CategoryInput struct {
 	Name  string `json:"name" binding:"required,max=60"`
 	Color string `json:"color" binding:"omitempty,hexcolor"`
+	Icon  string `json:"icon" binding:"omitempty,max=32"`
 }
 
 type Expense struct {

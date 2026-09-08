@@ -1,6 +1,6 @@
 -- name: CreateCategory :one
-INSERT INTO categories (space_id, name, color)
-VALUES ($1, $2, $3)
+INSERT INTO categories (space_id, name, color, icon)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: ListCategories :many

@@ -27,3 +27,6 @@ npm-debug.log*
 /backend/internal/db/sqlc/*.go
 # NOTE: apps/web/src/shared/api/schema.d.ts IS committed (placeholder that
 # `make openapi` overwrites) so a fresh checkout type-checks without codegen.
+
+# --- Claude Code local state (plans, settings) ---
+.claude/

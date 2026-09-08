@@ -11,14 +11,18 @@ import (
 	"github.com/reshnyakdg/expence-tracker/backend/internal/auth"
 	"github.com/reshnyakdg/expence-tracker/backend/internal/httpapi/handlers"
 	"github.com/reshnyakdg/expence-tracker/backend/internal/httpapi/middleware"
+	"github.com/reshnyakdg/expence-tracker/backend/internal/repository"
+	"github.com/reshnyakdg/expence-tracker/backend/internal/service"
 )
 
 type Deps struct {
 	DB        *pgxpool.Pool
 	Issuer    *auth.TokenIssuer
 	Google    *auth.GoogleAuthenticator
+	State     *auth.StateCodec
 	Log       *slog.Logger
 	WebOrigin string
+	DevAuth   bool
 }
 
 // NewRouter wires middleware and routes and returns the http.Handler.
@@ -30,7 +34,15 @@ func NewRouter(d Deps) http.Handler {
 	r.Use(middleware.Logger(d.Log))
 	r.Use(middleware.CORS(d.WebOrigin))
 
-	h := handlers.New(d.DB, d.Issuer, d.Google, d.Log)
+	svc := service.New(service.Deps{
+		Store:   repository.New(d.DB),
+		Issuer:  d.Issuer,
+		Google:  d.Google,
+		State:   d.State,
+		DevAuth: d.DevAuth,
+		Log:     d.Log,
+	})
+	h := handlers.New(svc, d.Log)
 
 	r.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -43,12 +55,16 @@ func NewRouter(d Deps) http.Handler {
 		authGroup.GET("/google/login", h.GoogleLogin)
 		authGroup.GET("/google/callback", h.GoogleCallback)
 		authGroup.POST("/refresh", h.Refresh)
-		authGroup.POST("/logout", h.Logout)
+		if d.DevAuth {
+			authGroup.POST("/dev-login", h.DevLogin)
+		}
 	}
 
 	authed := v1.Group("")
 	authed.Use(middleware.AuthRequired(d.Issuer))
 	{
+		authed.POST("/auth/logout", h.Logout)
+
 		authed.GET("/me", h.Me)
 
 		authed.GET("/spaces", h.ListSpaces)

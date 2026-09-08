@@ -43,6 +43,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/dev-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue tokens for an email without Google (local env only)
+         * @description Available only when the server runs with app_env=local. Upserts a user by email and returns a token pair. Returns 404 when disabled.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                        name?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Token pair issued */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TokenPair"];
+                    };
+                };
+                404: components["responses"]["NotFound"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/google/login": {
         parameters: {
             query?: never;
@@ -54,7 +102,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description Where to send the browser after successful login. */
+                    /** @description Same-site path to land on after login (default /spaces). Carried in the signed OAuth state. Google redirects to the SPA callback route, which then calls /api/v1/auth/google/callback. */
                     redirect_uri?: string;
                 };
                 header?: never;
@@ -734,12 +782,15 @@ export interface components {
             space_id: string;
             name: string;
             color?: string | null;
+            /** @description Emoji or icon name */
+            icon?: string | null;
             /** Format: date-time */
             created_at: string;
         };
         CategoryInput: {
             name: string;
             color?: string;
+            icon?: string;
         };
         Expense: {
             /** Format: uuid */

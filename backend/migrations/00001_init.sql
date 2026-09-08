@@ -47,6 +47,7 @@ CREATE TABLE categories (
     space_id    uuid NOT NULL REFERENCES spaces (id) ON DELETE CASCADE,
     name        text NOT NULL,
     color       text,
+    icon        text,
     created_at  timestamptz NOT NULL DEFAULT now(),
     UNIQUE (space_id, name)
 );

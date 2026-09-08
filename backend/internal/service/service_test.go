@@ -1,0 +1,208 @@
+package service
+
+import (
+	"context"
+	"io"
+	"log/slog"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/reshnyakdg/expence-tracker/backend/internal/auth"
+	"github.com/reshnyakdg/expence-tracker/backend/internal/domain"
+	"github.com/reshnyakdg/expence-tracker/backend/internal/httpapi/dto"
+)
+
+func newTestService(t *testing.T, devAuth bool) (*Service, *fakeStore) {
+	t.Helper()
+	fs := newFakeStore()
+	svc := New(Deps{
+		Store:   fs,
+		Issuer:  auth.NewTokenIssuer("test-secret", 15*time.Minute, 720*time.Hour),
+		State:   auth.NewStateCodec("test-secret", 10*time.Minute),
+		DevAuth: devAuth,
+		Log:     slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
+	return svc, fs
+}
+
+// seedUser inserts a user directly into the fake store.
+func seedUser(fs *fakeStore, email string) domain.User {
+	u := domain.User{ID: uuid.New(), Email: email, Name: email, CreatedAt: time.Now()}
+	fs.users[u.ID] = u
+	return u
+}
+
+func TestCreateSpace_AddsOwnerMembership(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip", Currency: "eur"})
+	require.NoError(t, err)
+	assert.Equal(t, "EUR", space.Currency)
+	assert.Equal(t, owner.ID.String(), space.OwnerID)
+
+	members, err := svc.ListMembers(ctx, owner.ID, uuid.MustParse(space.ID))
+	require.NoError(t, err)
+	require.Len(t, members, 1)
+	assert.Equal(t, domain.RoleOwner, members[0].Role)
+}
+
+func TestGetSpace_NonMemberIsNotFound(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	outsider := seedUser(fs, "outsider@example.com")
+
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+
+	_, err = svc.GetSpace(ctx, outsider.ID, uuid.MustParse(space.ID))
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestAddMember_RoleRules(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	member := seedUser(fs, "member@example.com")
+	newcomer := seedUser(fs, "newcomer@example.com")
+
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+
+	// owner adds a plain member
+	_, err = svc.AddMember(ctx, owner.ID, spaceID, dto.AddMemberInput{Email: "member@example.com"})
+	require.NoError(t, err)
+
+	// non-owner member may not grant the owner role
+	_, err = svc.AddMember(ctx, member.ID, spaceID, dto.AddMemberInput{Email: "newcomer@example.com", Role: "owner"})
+	assert.ErrorIs(t, err, domain.ErrForbidden)
+
+	// unknown email -> validation error
+	_, err = svc.AddMember(ctx, owner.ID, spaceID, dto.AddMemberInput{Email: "ghost@example.com"})
+	assert.ErrorIs(t, err, domain.ErrValidation)
+
+	// owner may grant owner
+	m, err := svc.AddMember(ctx, owner.ID, spaceID, dto.AddMemberInput{Email: "newcomer@example.com", Role: "owner"})
+	require.NoError(t, err)
+	assert.Equal(t, domain.RoleOwner, m.Role)
+	assert.Equal(t, newcomer.ID.String(), m.UserID)
+}
+
+func TestCreateExpense_PayerMustBeMember_AndCurrencyDefaults(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	stranger := seedUser(fs, "stranger@example.com")
+
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip", Currency: "GBP"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+
+	// payer not in the space
+	_, err = svc.CreateExpense(ctx, owner.ID, spaceID, dto.ExpenseInput{
+		PayerID: stranger.ID.String(), AmountCents: 1000, SpentAt: "2026-01-02",
+	})
+	assert.ErrorIs(t, err, domain.ErrValidation)
+
+	// happy path: currency omitted -> inherits the space currency
+	exp, err := svc.CreateExpense(ctx, owner.ID, spaceID, dto.ExpenseInput{
+		PayerID: owner.ID.String(), AmountCents: 1000, SpentAt: "2026-01-02",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "GBP", exp.Currency)
+	assert.Equal(t, "2026-01-02", exp.SpentAt)
+}
+
+func TestListExpenses_RejectsBadDate(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+
+	_, err = svc.ListExpenses(ctx, owner.ID, uuid.MustParse(space.ID), ExpenseListQuery{From: "not-a-date"})
+	assert.ErrorIs(t, err, domain.ErrValidation)
+}
+
+func TestBalances_EqualSplitSumsToZero(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	a := seedUser(fs, "a@example.com")
+	b := seedUser(fs, "b@example.com")
+
+	space, err := svc.CreateSpace(ctx, a.ID, dto.SpaceInput{Name: "Trip", Currency: "USD"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+	_, err = svc.AddMember(ctx, a.ID, spaceID, dto.AddMemberInput{Email: "b@example.com"})
+	require.NoError(t, err)
+
+	// a pays 3000, b pays 1000 -> total 4000, share 2000 each
+	_, err = svc.CreateExpense(ctx, a.ID, spaceID, dto.ExpenseInput{PayerID: a.ID.String(), AmountCents: 3000, SpentAt: "2026-01-02"})
+	require.NoError(t, err)
+	_, err = svc.CreateExpense(ctx, b.ID, spaceID, dto.ExpenseInput{PayerID: b.ID.String(), AmountCents: 1000, SpentAt: "2026-01-03"})
+	require.NoError(t, err)
+
+	balances, err := svc.Balances(ctx, a.ID, spaceID)
+	require.NoError(t, err)
+	require.Len(t, balances, 2)
+
+	var sum int64
+	byUser := map[string]dto.Balance{}
+	for _, bal := range balances {
+		sum += bal.NetCents
+		byUser[bal.UserID] = bal
+	}
+	assert.Zero(t, sum)
+	assert.Equal(t, int64(1000), byUser[a.ID.String()].NetCents)  // paid 3000 - share 2000
+	assert.Equal(t, int64(-1000), byUser[b.ID.String()].NetCents) // paid 1000 - share 2000
+}
+
+func TestDevLogin_DisabledOutsideLocal(t *testing.T) {
+	ctx := context.Background()
+	svc, _ := newTestService(t, false)
+
+	_, err := svc.DevLogin(ctx, "x@example.com", "")
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestRefresh_RotatesAndInvalidatesOldToken(t *testing.T) {
+	ctx := context.Background()
+	svc, _ := newTestService(t, true)
+
+	pair, err := svc.DevLogin(ctx, "dev@example.com", "Dev")
+	require.NoError(t, err)
+
+	rotated, err := svc.Refresh(ctx, pair.RefreshToken)
+	require.NoError(t, err)
+	assert.NotEqual(t, pair.RefreshToken, rotated.RefreshToken)
+	assert.NotEmpty(t, rotated.AccessToken)
+
+	// the original refresh token is now revoked
+	_, err = svc.Refresh(ctx, pair.RefreshToken)
+	assert.ErrorIs(t, err, domain.ErrUnauthorized)
+
+	// the rotated one still works
+	_, err = svc.Refresh(ctx, rotated.RefreshToken)
+	require.NoError(t, err)
+}
+
+func TestCreateCategory_DuplicateNameConflicts(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+
+	_, err = svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
+	require.NoError(t, err)
+	_, err = svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
+	assert.ErrorIs(t, err, domain.ErrConflict)
+}
