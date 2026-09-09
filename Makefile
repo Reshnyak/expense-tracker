@@ -80,15 +80,27 @@ openapi: ## Generate frontend TS types from api/openapi.yaml
 # ----------------------------------------------------------------------------
 # Run
 # ----------------------------------------------------------------------------
-.PHONY: run-api run-web dev
+.PHONY: run-api run-web dev up status stop logs
 run-api: ## Run the Go API server
 	cd backend && go run ./cmd/api
 
 run-web: ## Run the Vite dev server
 	pnpm --filter web dev
 
-dev: ## Run API + web together
+dev: ## Run API + web together (foreground, default ports)
 	$(MAKE) -j2 run-api run-web
+
+up: ## Ensure Postgres + API (:8090) + Vite (:5173) are running; start what's missing
+	./scripts/dev.sh up
+
+status: ## Show whether Postgres / API / Vite are up
+	./scripts/dev.sh status
+
+stop: ## Stop the background API + Vite started by `make up` (Postgres stays)
+	./scripts/dev.sh down
+
+logs: ## Tail the background API + Vite logs
+	./scripts/dev.sh logs
 
 # ----------------------------------------------------------------------------
 # Quality

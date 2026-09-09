@@ -30,3 +30,6 @@ npm-debug.log*
 
 # --- Claude Code local state (plans, settings) ---
 .claude/
+
+# local dev orchestrator state (scripts/dev.sh)
+.dev/
