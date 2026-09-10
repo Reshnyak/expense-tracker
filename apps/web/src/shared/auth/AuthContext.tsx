@@ -11,6 +11,8 @@ interface AuthState {
   isLoading: boolean;
   loginWithTokens: (access: string, refresh: string) => void;
   logout: () => void;
+  /** Re-fetch `GET /v1/me` (e.g. after the user edits their profile). */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -58,8 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       loginWithTokens,
       logout,
+      refreshUser: refreshMe,
     }),
-    [user, isLoading, loginWithTokens, logout],
+    [user, isLoading, loginWithTokens, logout, refreshMe],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -70,3 +70,17 @@ func (r *userRepo) LocalCredentials(ctx context.Context, email string) (domain.U
 	// password_hash is guaranteed non-NULL by the query's WHERE clause.
 	return userFromSQLC(u), *u.PasswordHash, nil
 }
+
+func (r *userRepo) UpdateProfile(ctx context.Context, id uuid.UUID, in domain.ProfileUpdate) (domain.User, error) {
+	u, err := r.q.UpdateUserProfile(ctx, sqlc.UpdateUserProfileParams{
+		ID:        id,
+		FirstName: in.FirstName,
+		LastName:  in.LastName,
+		Phone:     in.Phone,
+		Name:      in.Name,
+	})
+	if err != nil {
+		return domain.User{}, mapErr(err)
+	}
+	return userFromSQLC(u), nil
+}

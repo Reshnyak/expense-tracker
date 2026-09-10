@@ -370,7 +370,44 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update the current user's profile
+         * @description Updates first/last name and phone. `name` is recomputed from the parts (falls back to the previous name when both are empty). The login email is not editable here.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateMeInput"];
+                };
+            };
+            responses: {
+                /** @description The updated user */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["User"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Invalid input */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/v1/spaces": {
@@ -919,9 +956,17 @@ export interface components {
             /** Format: email */
             email: string;
             name: string;
+            first_name?: string | null;
+            last_name?: string | null;
+            phone?: string | null;
             avatar_url?: string | null;
             /** Format: date-time */
             created_at: string;
+        };
+        UpdateMeInput: {
+            first_name?: string;
+            last_name?: string;
+            phone?: string;
         };
         /** @enum {string} */
         MemberRole: "owner" | "member";

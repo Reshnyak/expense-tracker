@@ -43,8 +43,18 @@ type User struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
 	Name      string    `json:"name"`
+	FirstName *string   `json:"first_name"`
+	LastName  *string   `json:"last_name"`
+	Phone     *string   `json:"phone"`
 	AvatarURL *string   `json:"avatar_url"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// UpdateMeInput is the body of PATCH /api/v1/me.
+type UpdateMeInput struct {
+	FirstName string `json:"first_name" binding:"omitempty,max=120"`
+	LastName  string `json:"last_name" binding:"omitempty,max=120"`
+	Phone     string `json:"phone" binding:"omitempty,max=32"`
 }
 
 type Space struct {

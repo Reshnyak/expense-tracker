@@ -36,6 +36,9 @@ type UserRepository interface {
 	// the user has no password set (a Google-only account) — callers must not
 	// distinguish the two.
 	LocalCredentials(ctx context.Context, email string) (User, string, error)
+
+	// UpdateProfile writes the editable profile fields and returns the user.
+	UpdateProfile(ctx context.Context, id uuid.UUID, in ProfileUpdate) (User, error)
 }
 
 type SpaceRepository interface {

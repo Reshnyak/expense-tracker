@@ -116,6 +116,19 @@ func (r *fakeUsers) LocalCredentials(_ context.Context, email string) (domain.Us
 	return domain.User{}, "", domain.ErrNotFound
 }
 
+func (r *fakeUsers) UpdateProfile(_ context.Context, id uuid.UUID, in domain.ProfileUpdate) (domain.User, error) {
+	u, ok := r.users[id]
+	if !ok {
+		return domain.User{}, domain.ErrNotFound
+	}
+	u.FirstName = in.FirstName
+	u.LastName = in.LastName
+	u.Phone = in.Phone
+	u.Name = in.Name
+	r.users[id] = u
+	return u, nil
+}
+
 // --- spaces ------------------------------------------------------------------
 
 type fakeSpaces fakeStore

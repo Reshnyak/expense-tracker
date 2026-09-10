@@ -31,3 +31,13 @@ RETURNING *;
 
 -- name: GetLocalCredentialsByEmail :one
 SELECT * FROM users WHERE email = $1 AND password_hash IS NOT NULL;
+
+-- name: UpdateUserProfile :one
+UPDATE users
+SET first_name = $2,
+    last_name  = $3,
+    phone      = $4,
+    name       = $5,
+    updated_at = now()
+WHERE id = $1
+RETURNING *;

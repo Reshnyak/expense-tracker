@@ -68,6 +68,7 @@ func NewRouter(d Deps) http.Handler {
 		authed.POST("/auth/logout", h.Logout)
 
 		authed.GET("/me", h.Me)
+		authed.PATCH("/me", h.UpdateMe)
 
 		authed.GET("/spaces", h.ListSpaces)
 		authed.POST("/spaces", h.CreateSpace)

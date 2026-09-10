@@ -310,6 +310,37 @@ func TestUpdateCategory_DuplicateNameConflicts(t *testing.T) {
 	assert.ErrorIs(t, err, domain.ErrConflict)
 }
 
+func TestUpdateMe_SetsPartsAndRecomputesName(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	u := seedUser(fs, "u@example.com")
+	fs.users[u.ID] = domain.User{ID: u.ID, Email: u.Email, Name: "Old Name", CreatedAt: u.CreatedAt}
+
+	got, err := svc.UpdateMe(ctx, u.ID, dto.UpdateMeInput{
+		FirstName: "  Анна ", LastName: "Каренина", Phone: " +7 900 111 22 33 ",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "Анна Каренина", got.Name)
+	require.NotNil(t, got.FirstName)
+	assert.Equal(t, "Анна", *got.FirstName)
+	require.NotNil(t, got.Phone)
+	assert.Equal(t, "+7 900 111 22 33", *got.Phone)
+	assert.Equal(t, "u@example.com", got.Email)
+}
+
+func TestUpdateMe_EmptyPartsKeepPreviousName(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	u := seedUser(fs, "u@example.com")
+	fs.users[u.ID] = domain.User{ID: u.ID, Email: u.Email, Name: "Keep Me", CreatedAt: u.CreatedAt}
+
+	got, err := svc.UpdateMe(ctx, u.ID, dto.UpdateMeInput{Phone: "12345"})
+	require.NoError(t, err)
+	assert.Equal(t, "Keep Me", got.Name)
+	assert.Nil(t, got.FirstName)
+	assert.Nil(t, got.LastName)
+}
+
 func TestDeleteCategory_RemovesAndIsIdempotentlyNotFound(t *testing.T) {
 	ctx := context.Background()
 	svc, fs := newTestService(t, false)

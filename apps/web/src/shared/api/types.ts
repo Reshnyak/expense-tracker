@@ -7,6 +7,7 @@ export type TokenPair = Schemas["TokenPair"];
 export type User = Schemas["User"];
 export type RegisterInput = Schemas["RegisterInput"];
 export type LoginInput = Schemas["LoginInput"];
+export type UpdateMeInput = Schemas["UpdateMeInput"];
 
 /**
  * Body of `POST /api/v1/auth/dev-login`. Hand-written: the OpenAPI spec inlines

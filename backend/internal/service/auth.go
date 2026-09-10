@@ -178,6 +178,36 @@ func (s *Service) Me(ctx context.Context, userID uuid.UUID) (dto.User, error) {
 	return userToDTO(u), nil
 }
 
+// UpdateMe writes the editable profile fields (first/last name, phone) and
+// recomputes the display name from the parts, keeping the previous name when
+// both parts are cleared.
+func (s *Service) UpdateMe(ctx context.Context, userID uuid.UUID, in dto.UpdateMeInput) (dto.User, error) {
+	current, err := s.store.Users().GetByID(ctx, userID)
+	if err != nil {
+		return dto.User{}, err
+	}
+
+	first := strings.TrimSpace(in.FirstName)
+	last := strings.TrimSpace(in.LastName)
+	phone := strings.TrimSpace(in.Phone)
+
+	name := strings.TrimSpace(first + " " + last)
+	if name == "" {
+		name = current.Name
+	}
+
+	u, err := s.store.Users().UpdateProfile(ctx, userID, domain.ProfileUpdate{
+		FirstName: emptyToNil(first),
+		LastName:  emptyToNil(last),
+		Phone:     emptyToNil(phone),
+		Name:      name,
+	})
+	if err != nil {
+		return dto.User{}, err
+	}
+	return userToDTO(u), nil
+}
+
 // sanitizeRedirect only allows same-site absolute paths to prevent the state
 // token from being used as an open redirect.
 func sanitizeRedirect(p string) string {

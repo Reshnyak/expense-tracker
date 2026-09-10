@@ -32,6 +32,9 @@ func userToDTO(u domain.User) dto.User {
 		ID:        u.ID.String(),
 		Email:     u.Email,
 		Name:      u.Name,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Phone:     u.Phone,
 		AvatarURL: u.AvatarURL,
 		CreatedAt: u.CreatedAt,
 	}
