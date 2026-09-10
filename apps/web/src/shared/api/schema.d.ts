@@ -610,6 +610,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/spaces/{spaceId}/categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                spaceId: components["parameters"]["SpaceId"];
+                categoryId: components["parameters"]["CategoryId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a category
+         * @description Removes the category. Expenses that referenced it keep their history with category_id cleared (ON DELETE SET NULL).
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    spaceId: components["parameters"]["SpaceId"];
+                    categoryId: components["parameters"]["CategoryId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["NotFound"];
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update a category */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    spaceId: components["parameters"]["SpaceId"];
+                    categoryId: components["parameters"]["CategoryId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CategoryInput"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Category"];
+                    };
+                };
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["Conflict"];
+            };
+        };
+        trace?: never;
+    };
     "/api/v1/spaces/{spaceId}/expenses": {
         parameters: {
             query?: never;
@@ -974,6 +1047,7 @@ export interface components {
     parameters: {
         SpaceId: string;
         ExpenseId: string;
+        CategoryId: string;
     };
     requestBodies: never;
     headers: never;

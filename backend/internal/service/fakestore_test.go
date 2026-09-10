@@ -209,6 +209,32 @@ func (r *fakeCats) Get(_ context.Context, id, spaceID uuid.UUID) (domain.Categor
 	return c, nil
 }
 
+func (r *fakeCats) Update(_ context.Context, id, spaceID uuid.UUID, in domain.CategoryInput) (domain.Category, error) {
+	c, ok := r.cats[id]
+	if !ok || c.SpaceID != spaceID {
+		return domain.Category{}, domain.ErrNotFound
+	}
+	for _, other := range r.cats {
+		if other.SpaceID == spaceID && other.ID != id && other.Name == in.Name {
+			return domain.Category{}, domain.ErrConflict
+		}
+	}
+	c.Name = in.Name
+	c.Color = in.Color
+	c.Icon = in.Icon
+	r.cats[id] = c
+	return c, nil
+}
+
+func (r *fakeCats) Delete(_ context.Context, id, spaceID uuid.UUID) error {
+	c, ok := r.cats[id]
+	if !ok || c.SpaceID != spaceID {
+		return nil
+	}
+	delete(r.cats, id)
+	return nil
+}
+
 // --- expenses ------------------------------------------------------------------
 
 type fakeExpenses fakeStore

@@ -51,6 +51,8 @@ type CategoryRepository interface {
 	List(ctx context.Context, spaceID uuid.UUID) ([]Category, error)
 	Create(ctx context.Context, spaceID uuid.UUID, in CategoryInput) (Category, error)
 	Get(ctx context.Context, id, spaceID uuid.UUID) (Category, error)
+	Update(ctx context.Context, id, spaceID uuid.UUID, in CategoryInput) (Category, error)
+	Delete(ctx context.Context, id, spaceID uuid.UUID) error
 }
 
 type ExpenseRepository interface {

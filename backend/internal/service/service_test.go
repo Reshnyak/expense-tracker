@@ -269,3 +269,64 @@ func TestCreateCategory_DuplicateNameConflicts(t *testing.T) {
 	_, err = svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
 	assert.ErrorIs(t, err, domain.ErrConflict)
 }
+
+func TestUpdateCategory_RenamesAndRejectsNonMember(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	outsider := seedUser(fs, "outsider@example.com")
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+
+	cat, err := svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
+	require.NoError(t, err)
+	catID := uuid.MustParse(cat.ID)
+
+	updated, err := svc.UpdateCategory(ctx, owner.ID, spaceID, catID, dto.CategoryInput{Name: "Groceries", Color: "#00ff00"})
+	require.NoError(t, err)
+	assert.Equal(t, "Groceries", updated.Name)
+	require.NotNil(t, updated.Color)
+	assert.Equal(t, "#00ff00", *updated.Color)
+
+	_, err = svc.UpdateCategory(ctx, outsider.ID, spaceID, catID, dto.CategoryInput{Name: "Nope"})
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestUpdateCategory_DuplicateNameConflicts(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+
+	_, err = svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
+	require.NoError(t, err)
+	travel, err := svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Travel"})
+	require.NoError(t, err)
+
+	_, err = svc.UpdateCategory(ctx, owner.ID, spaceID, uuid.MustParse(travel.ID), dto.CategoryInput{Name: "Food"})
+	assert.ErrorIs(t, err, domain.ErrConflict)
+}
+
+func TestDeleteCategory_RemovesAndIsIdempotentlyNotFound(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+
+	cat, err := svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
+	require.NoError(t, err)
+	catID := uuid.MustParse(cat.ID)
+
+	require.NoError(t, svc.DeleteCategory(ctx, owner.ID, spaceID, catID))
+
+	cats, err := svc.ListCategories(ctx, owner.ID, spaceID)
+	require.NoError(t, err)
+	assert.Empty(t, cats)
+
+	assert.ErrorIs(t, svc.DeleteCategory(ctx, owner.ID, spaceID, catID), domain.ErrNotFound)
+}

@@ -292,6 +292,39 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Category" }
 
+  /api/v1/spaces/{spaceId}/categories/{categoryId}:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+      - $ref: "#/components/parameters/CategoryId"
+    patch:
+      tags: [categories]
+      summary: Update a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [categories]
+      summary: Delete a category
+      description: >
+        Removes the category. Expenses that referenced it keep their history with
+        category_id cleared (ON DELETE SET NULL).
+      responses:
+        "204": { description: Deleted }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/v1/spaces/{spaceId}/expenses:
     parameters:
       - $ref: "#/components/parameters/SpaceId"
@@ -397,6 +430,11 @@ components:
       schema: { type: string, format: uuid }
     ExpenseId:
       name: expenseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CategoryId:
+      name: categoryId
       in: path
       required: true
       schema: { type: string, format: uuid }

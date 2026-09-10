@@ -16,6 +16,7 @@ export type DevLoginInput = { email: string; name?: string };
 export type Space = Schemas["Space"];
 export type SpaceInput = Schemas["SpaceInput"];
 export type SpaceMember = Schemas["SpaceMember"];
+export type MemberRole = Schemas["MemberRole"];
 export type Category = Schemas["Category"];
 export type CategoryInput = Schemas["CategoryInput"];
 export type Expense = Schemas["Expense"];
