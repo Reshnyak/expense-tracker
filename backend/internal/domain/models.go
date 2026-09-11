@@ -104,6 +104,8 @@ func (t RefreshToken) Active(now time.Time) bool {
 type GoogleUpsert struct {
 	Email     string
 	Name      string
+	FirstName *string
+	LastName  *string
 	AvatarURL *string
 	GoogleSub string
 }

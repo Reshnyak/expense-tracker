@@ -69,7 +69,12 @@ export function ExpenseFormDialog({
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // Reset the form to the current subject each time the dialog opens.
+  // Reset the form to the current subject each time the dialog opens for a
+  // (possibly different) expense. Keyed on `expense?.id`, not the `expense`
+  // object itself: a background refetch (e.g. another dialog invalidating the
+  // expenses list) gives every row a new object reference even when nothing
+  // about THIS expense changed, and re-running this effect on that would
+  // silently overwrite whatever the user has typed so far.
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
@@ -86,7 +91,8 @@ export function ExpenseFormDialog({
       setSpentAt(today());
       setDescription("");
     }
-  }, [isOpen, mode, expense, defaultPayerId, members]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, mode, expense?.id]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();

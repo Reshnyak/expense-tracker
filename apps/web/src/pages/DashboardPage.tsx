@@ -4,7 +4,7 @@ import { Loader2, Plus, Tags } from "lucide-react";
 
 import { useCategories } from "@/features/categories/useCategories";
 import type { ExpenseFilters } from "@/features/expenses/useExpenses";
-import { useBalances, useExpenses } from "@/features/expenses/useExpenses";
+import { MAX_ROWS, useBalances, useExpenses } from "@/features/expenses/useExpenses";
 import { useMembers } from "@/features/members/useMembers";
 import { useSpaces } from "@/features/spaces/useSpaces";
 import { useAuth } from "@/shared/auth/AuthContext";
@@ -26,7 +26,7 @@ export function DashboardPage() {
   const { spaceId = "" } = useParams();
   const { user } = useAuth();
 
-  const { data: spaces, isLoading: spacesLoading } = useSpaces();
+  const { data: spaces, isLoading: spacesLoading, error: spacesError } = useSpaces();
   const { data: members } = useMembers(spaceId);
   const { data: categories } = useCategories(spaceId);
   const { data: balances } = useBalances(spaceId);
@@ -51,6 +51,10 @@ export function DashboardPage() {
   const memberList = useMemo(() => members ?? [], [members]);
   const categoryList = useMemo(() => categories ?? [], [categories]);
   const items = list?.items ?? [];
+  const isDateFiltered = Boolean(filters.from || filters.to);
+  // We only ever fetch up to MAX_ROWS; hitting that cap means there may be
+  // older expenses in range that were never fetched, not just off-screen.
+  const truncated = items.length >= MAX_ROWS;
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const pageItems = items.slice(
@@ -63,6 +67,17 @@ export function DashboardPage() {
       <p className="text-muted-foreground flex items-center gap-2">
         <Loader2 className="size-4 animate-spin" /> Загрузка…
       </p>
+    );
+  }
+
+  if (spacesError) {
+    return (
+      <div className="space-y-3">
+        <p className="text-destructive">Не удалось загрузить пространства.</p>
+        <Button asChild variant="outline">
+          <Link to="/spaces">Повторить</Link>
+        </Button>
+      </div>
     );
   }
 
@@ -95,6 +110,7 @@ export function DashboardPage() {
         expenses={items}
         categories={categoryList}
         currency={currency}
+        filtered={isDateFiltered}
       />
 
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -129,6 +145,14 @@ export function DashboardPage() {
         <p className="text-destructive">Не удалось загрузить расходы.</p>
       ) : (
         <div className="space-y-4">
+          {truncated && (
+            <p className="text-muted-foreground text-xs">
+              Показаны только последние {MAX_ROWS} расходов
+              {isDateFiltered ? " за выбранный период" : ""} — более ранние
+              могли не загрузиться. Сузьте диапазон дат «С» / «По», чтобы
+              увидеть их.
+            </p>
+          )}
           <ExpensesList
             spaceId={spaceId}
             expenses={pageItems}

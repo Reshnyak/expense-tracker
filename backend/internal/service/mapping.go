@@ -27,6 +27,24 @@ func emptyToNil(s string) *string {
 	return &s
 }
 
+// splitDisplayName best-effort splits a free-text display name into first/last
+// parts, the same way migration 00004 backfilled existing users: everything up
+// to the first space is the first name, the remainder is the last name. Used
+// as a fallback wherever a caller only has a single name string (dev-login,
+// registration) rather than structured first/last fields.
+func splitDisplayName(name string) (first, last *string) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, nil
+	}
+	parts := strings.SplitN(name, " ", 2)
+	first = emptyToNil(parts[0])
+	if len(parts) > 1 {
+		last = emptyToNil(parts[1])
+	}
+	return first, last
+}
+
 func userToDTO(u domain.User) dto.User {
 	return dto.User{
 		ID:        u.ID.String(),

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, Plus } from "lucide-react";
 
 import { useSpaces } from "@/features/spaces/useSpaces";
 import { cn } from "@/shared/lib/utils";
@@ -20,7 +20,7 @@ import { CreateSpaceDialog } from "./CreateSpaceDialog";
 /** Header control: pick the active space or create a new one. */
 export function SpaceSwitcher({ activeSpaceId }: { activeSpaceId?: string }) {
   const navigate = useNavigate();
-  const { data: spaces } = useSpaces();
+  const { data: spaces, isLoading, error } = useSpaces();
   const [createOpen, setCreateOpen] = useState(false);
 
   const active = spaces?.find((s) => s.id === activeSpaceId);
@@ -35,12 +35,18 @@ export function SpaceSwitcher({ activeSpaceId }: { activeSpaceId?: string }) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="max-w-52 gap-1.5">
+            {isLoading && <Loader2 className="size-3.5 shrink-0 animate-spin opacity-60" />}
             <span className="truncate">{active?.name ?? "Пространства"}</span>
             <ChevronsUpDown className="size-3.5 shrink-0 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuLabel>Пространства</DropdownMenuLabel>
+          {error && (
+            <DropdownMenuItem disabled className="text-destructive">
+              Не удалось загрузить пространства
+            </DropdownMenuItem>
+          )}
           {spaces?.map((s) => (
             <DropdownMenuItem key={s.id} onSelect={() => open(s.id)}>
               <Check

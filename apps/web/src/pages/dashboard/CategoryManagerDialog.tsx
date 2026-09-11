@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Check, Loader2, Plus, Trash2 } from "lucide-react";
 
@@ -82,6 +82,32 @@ function CategoryRow({ spaceId, category }: { spaceId: string; category: Categor
     name.trim() !== category.name ||
     color !== (category.color ?? DEFAULT_COLOR) ||
     icon !== (category.icon ?? "");
+
+  // Keep the row in sync with a category that changed elsewhere (another
+  // member edited it, or our own save came back) — but only while this row
+  // has no unsaved edits of its own, so we never clobber in-progress input
+  // and, symmetrically, never auto-save a stale value over someone else's
+  // change just because the prop moved out from under us.
+  //
+  // We compare against the PREVIOUS category snapshot, not the incoming one:
+  // the moment the prop changes, local state is by definition stale relative
+  // to the new prop, so comparing straight to it would always look "dirty"
+  // and the sync would never happen.
+  const prevCategoryRef = useRef(category);
+  useEffect(() => {
+    const prev = prevCategoryRef.current;
+    const untouchedSincePrevSync =
+      name.trim() === prev.name &&
+      color === (prev.color ?? DEFAULT_COLOR) &&
+      icon === (prev.icon ?? "");
+    if (untouchedSincePrevSync) {
+      setName(category.name);
+      setColor(category.color ?? DEFAULT_COLOR);
+      setIcon(category.icon ?? "");
+    }
+    prevCategoryRef.current = category;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category.name, category.color, category.icon]);
 
   function save() {
     if (!dirty || update.isPending) return;

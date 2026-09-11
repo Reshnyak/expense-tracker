@@ -47,9 +47,17 @@ func (s *Service) CompleteGoogleLogin(ctx context.Context, code, state string) (
 	if name == "" {
 		name = profile.Email
 	}
+	// Prefer Google's structured given_name/family_name; fall back to
+	// splitting the combined name when Google didn't return them.
+	firstName, lastName := emptyToNil(profile.GivenName), emptyToNil(profile.FamilyName)
+	if firstName == nil && lastName == nil {
+		firstName, lastName = splitDisplayName(name)
+	}
 	user, err := s.store.Users().UpsertFromGoogle(ctx, domain.GoogleUpsert{
 		Email:     profile.Email,
 		Name:      name,
+		FirstName: firstName,
+		LastName:  lastName,
 		AvatarURL: emptyToNil(profile.Picture),
 		GoogleSub: profile.Sub,
 	})
@@ -74,7 +82,8 @@ func (s *Service) DevLogin(ctx context.Context, email, name string) (dto.TokenPa
 	if name == "" {
 		name = email
 	}
-	user, err := s.store.Users().UpsertByEmail(ctx, email, name)
+	firstName, lastName := splitDisplayName(name)
+	user, err := s.store.Users().UpsertByEmail(ctx, email, name, firstName, lastName)
 	if err != nil {
 		return dto.TokenPair{}, err
 	}
@@ -99,7 +108,8 @@ func (s *Service) Register(ctx context.Context, email, password, name string) (d
 	if err != nil {
 		return dto.TokenPair{}, err
 	}
-	user, err := s.store.Users().CreateLocal(ctx, email, name, hash)
+	firstName, lastName := splitDisplayName(name)
+	user, err := s.store.Users().CreateLocal(ctx, email, name, firstName, lastName, hash)
 	if err != nil {
 		if errors.Is(err, domain.ErrConflict) {
 			return dto.TokenPair{}, fmt.Errorf("%w: email already registered", domain.ErrConflict)

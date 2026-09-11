@@ -7,8 +7,11 @@ const listKey = (spaceId: string) => ["spaces", spaceId, "expenses"] as const;
 const balanceKey = (spaceId: string) => ["spaces", spaceId, "balances"] as const;
 
 /** The backend has no working cursor pagination yet, so we pull one generous
- * page and paginate on the client. `from` / `to` are inclusive `YYYY-MM-DD`. */
-const MAX_ROWS = 200;
+ * page and paginate on the client. `from` / `to` are inclusive `YYYY-MM-DD`.
+ * Exported so callers can tell when a result may have been truncated by this
+ * cap (`items.length >= MAX_ROWS`) and warn the user instead of silently
+ * treating that count as the true total. */
+export const MAX_ROWS = 200;
 
 export interface ExpenseFilters {
   from?: string;

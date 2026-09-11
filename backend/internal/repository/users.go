@@ -32,6 +32,8 @@ func (r *userRepo) UpsertFromGoogle(ctx context.Context, p domain.GoogleUpsert) 
 	u, err := r.q.UpsertUserFromGoogle(ctx, sqlc.UpsertUserFromGoogleParams{
 		Email:     p.Email,
 		Name:      p.Name,
+		FirstName: p.FirstName,
+		LastName:  p.LastName,
 		AvatarUrl: p.AvatarURL,
 		GoogleSub: &sub,
 	})
@@ -41,19 +43,26 @@ func (r *userRepo) UpsertFromGoogle(ctx context.Context, p domain.GoogleUpsert) 
 	return userFromSQLC(u), nil
 }
 
-func (r *userRepo) UpsertByEmail(ctx context.Context, email, name string) (domain.User, error) {
-	u, err := r.q.UpsertUserByEmail(ctx, sqlc.UpsertUserByEmailParams{Email: email, Name: name})
+func (r *userRepo) UpsertByEmail(ctx context.Context, email, name string, firstName, lastName *string) (domain.User, error) {
+	u, err := r.q.UpsertUserByEmail(ctx, sqlc.UpsertUserByEmailParams{
+		Email:     email,
+		Name:      name,
+		FirstName: firstName,
+		LastName:  lastName,
+	})
 	if err != nil {
 		return domain.User{}, mapErr(err)
 	}
 	return userFromSQLC(u), nil
 }
 
-func (r *userRepo) CreateLocal(ctx context.Context, email, name, passwordHash string) (domain.User, error) {
+func (r *userRepo) CreateLocal(ctx context.Context, email, name string, firstName, lastName *string, passwordHash string) (domain.User, error) {
 	hash := passwordHash
 	u, err := r.q.CreateLocalUser(ctx, sqlc.CreateLocalUserParams{
 		Email:        email,
 		Name:         name,
+		FirstName:    firstName,
+		LastName:     lastName,
 		PasswordHash: &hash,
 	})
 	if err != nil {

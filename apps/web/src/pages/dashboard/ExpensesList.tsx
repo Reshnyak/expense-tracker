@@ -84,6 +84,7 @@ function ExpenseRow({
   const del = useDeleteExpense(spaceId);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const payer = members.find((m) => m.user_id === expense.payer_id);
   const payerName = payer ? payer.user.name || payer.user.email : "—";
@@ -150,7 +151,13 @@ function ExpenseRow({
         onOpenChange={setEditOpen}
       />
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <AlertDialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          setDeleteOpen(open);
+          if (open) setDeleteError(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Удалить расход?</AlertDialogTitle>
@@ -160,10 +167,28 @@ function ExpenseRow({
               необратимо.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError && (
+            <p role="alert" className="text-destructive text-sm">
+              {deleteError}
+            </p>
+          )}
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction onClick={() => del.mutate(expense.id)}>
-              Удалить
+            <AlertDialogCancel disabled={del.isPending}>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={del.isPending}
+              onClick={(e) => {
+                // Keep the dialog open until we know the outcome — Radix
+                // closes it on click by default unless we prevent that.
+                e.preventDefault();
+                setDeleteError(null);
+                del.mutate(expense.id, {
+                  onSuccess: () => setDeleteOpen(false),
+                  onError: () =>
+                    setDeleteError("Не удалось удалить расход. Попробуйте позже."),
+                });
+              }}
+            >
+              {del.isPending ? "Удаляем…" : "Удалить"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

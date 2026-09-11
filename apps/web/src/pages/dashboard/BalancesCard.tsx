@@ -14,12 +14,18 @@ export function BalancesCard({
   expenses,
   categories,
   currency,
+  filtered,
 }: {
   balances: Balance[];
   members: SpaceMember[];
   expenses: Expense[];
   categories: Category[];
   currency: string;
+  /** Whether `expenses` is narrowed by a date filter — `balances` (and the
+   * header total below) never is, so the two totals in this card can land on
+   * different scopes; when true we label the category breakdown accordingly
+   * instead of implying it must add up to the header figure. */
+  filtered: boolean;
 }) {
   const nameOf = (userId: string) => {
     const m = members.find((x) => x.user_id === userId);
@@ -62,7 +68,7 @@ export function BalancesCard({
       <CardHeader className="flex-row items-baseline justify-between gap-2">
         <CardTitle className="text-base">Балансы</CardTitle>
         <span className="text-muted-foreground text-sm">
-          Всего потрачено{" "}
+          Всего потрачено (за всё время){" "}
           <span className="text-foreground tabular-nums font-medium">
             {formatCents(totalPaid, currency)}
           </span>
@@ -127,9 +133,14 @@ export function BalancesCard({
               <>
                 <Separator />
                 <div className="space-y-2">
-                  <p className="text-muted-foreground text-xs font-medium">
-                    По категориям
-                  </p>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-muted-foreground text-xs font-medium">
+                      По категориям ({filtered ? "за выбранный период" : "за всё время"})
+                    </p>
+                    <p className="text-muted-foreground text-xs tabular-nums">
+                      {formatCents(byCategory.sum, currency)}
+                    </p>
+                  </div>
                   <ul className="space-y-2">
                     {byCategory.rows.map((r) => (
                       <li key={r.key} className="space-y-1">

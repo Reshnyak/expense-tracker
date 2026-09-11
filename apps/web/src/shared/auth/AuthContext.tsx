@@ -37,6 +37,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Re-fetch the user WITHOUT touching the app-wide `isLoading` gate.
+  // `isLoading` is what `RequireAuth` uses to decide whether to unmount the
+  // whole authenticated app behind a full-page spinner — appropriate for the
+  // initial "are we signed in?" check, but not for a background refresh like
+  // "the user just edited their own profile".
+  const refreshUser = useCallback(async () => {
+    if (!getAccessToken()) return;
+    try {
+      setUser(await api.get<User>("/v1/me"));
+    } catch {
+      // keep the previously loaded user on a transient failure
+    }
+  }, []);
+
   useEffect(() => {
     void refreshMe();
     return subscribe(() => void refreshMe());
@@ -60,9 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       loginWithTokens,
       logout,
-      refreshUser: refreshMe,
+      refreshUser,
     }),
-    [user, isLoading, loginWithTokens, logout, refreshMe],
+    [user, isLoading, loginWithTokens, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -193,6 +193,33 @@ func TestRefresh_RotatesAndInvalidatesOldToken(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestDevLogin_SplitsNameAndPreservesEditsOnRelogin(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, true)
+
+	_, err := svc.DevLogin(ctx, "dev2@example.com", "Anna Karenina")
+	require.NoError(t, err)
+
+	u, err := fs.Users().GetByEmail(ctx, "dev2@example.com")
+	require.NoError(t, err)
+	require.NotNil(t, u.FirstName)
+	assert.Equal(t, "Anna", *u.FirstName)
+	require.NotNil(t, u.LastName)
+	assert.Equal(t, "Karenina", *u.LastName)
+
+	// A returning user who has since edited their own profile keeps that
+	// edit across a repeat dev-login, even if a different name is passed.
+	_, err = svc.UpdateMe(ctx, u.ID, dto.UpdateMeInput{FirstName: "Custom", LastName: "Name"})
+	require.NoError(t, err)
+
+	_, err = svc.DevLogin(ctx, "dev2@example.com", "Someone Else")
+	require.NoError(t, err)
+
+	after, err := fs.Users().GetByEmail(ctx, "dev2@example.com")
+	require.NoError(t, err)
+	assert.Equal(t, "Custom Name", after.Name)
+}
+
 func TestRegister_IssuesTokensAndLoginWorks(t *testing.T) {
 	ctx := context.Background()
 	svc, _ := newTestService(t, false)
@@ -206,6 +233,21 @@ func TestRegister_IssuesTokensAndLoginWorks(t *testing.T) {
 	loginPair, err := svc.Login(ctx, "alice@example.com", "s3cret-password")
 	require.NoError(t, err)
 	assert.NotEmpty(t, loginPair.AccessToken)
+}
+
+func TestRegister_SplitsNameIntoFirstLast(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+
+	_, err := svc.Register(ctx, "split@example.com", "s3cret-password", "Ivan Petrov")
+	require.NoError(t, err)
+
+	u, err := fs.Users().GetByEmail(ctx, "split@example.com")
+	require.NoError(t, err)
+	require.NotNil(t, u.FirstName)
+	assert.Equal(t, "Ivan", *u.FirstName)
+	require.NotNil(t, u.LastName)
+	assert.Equal(t, "Petrov", *u.LastName)
 }
 
 func TestRegister_DuplicateEmailConflicts(t *testing.T) {
