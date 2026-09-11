@@ -44,7 +44,17 @@ jobs:
         with:
           go-version: "1.25"
           cache-dependency-path: backend/go.sum
-      - run: go mod download
+      # The Go module proxy occasionally drops the connection mid-download;
+      # retry a few times instead of failing the whole run on a blip.
+      - name: Download Go modules
+        run: |
+          n=0
+          until go mod download; do
+            n=$((n + 1))
+            if [ "$n" -ge 3 ]; then exit 1; fi
+            echo "go mod download failed (attempt $n/3), retrying in 10s..." >&2
+            sleep 10
+          done
       # internal/db/sqlc is generated and git-ignored (see CLAUDE.md) — nothing
       # in this module builds without it.
       - name: Install sqlc
