@@ -55,7 +55,9 @@ jobs:
         run: sqlc generate
       - run: go build ./...
       - run: go vet ./...
-      - uses: golangci/golangci-lint-action@v6
+      # v6 only supports golangci-lint v1; this repo's .golangci.yml is
+      # schema v2 (golangci-lint v2.x), which needs the v7 action.
+      - uses: golangci/golangci-lint-action@v7
         with:
           version: v2.11.4
           working-directory: backend
