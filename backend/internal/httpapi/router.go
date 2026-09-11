@@ -68,6 +68,7 @@ func NewRouter(d Deps) http.Handler {
 		authed.POST("/auth/logout", h.Logout)
 
 		authed.GET("/me", h.Me)
+		authed.PATCH("/me", h.UpdateMe)
 
 		authed.GET("/spaces", h.ListSpaces)
 		authed.POST("/spaces", h.CreateSpace)
@@ -77,6 +78,8 @@ func NewRouter(d Deps) http.Handler {
 
 		authed.GET("/spaces/:spaceId/categories", h.ListCategories)
 		authed.POST("/spaces/:spaceId/categories", h.CreateCategory)
+		authed.PATCH("/spaces/:spaceId/categories/:categoryId", h.UpdateCategory)
+		authed.DELETE("/spaces/:spaceId/categories/:categoryId", h.DeleteCategory)
 
 		authed.GET("/spaces/:spaceId/expenses", h.ListExpenses)
 		authed.POST("/spaces/:spaceId/expenses", h.CreateExpense)

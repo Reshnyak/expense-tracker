@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 
 import App from "@/App";
 import { RedirectIfAuthed } from "@/shared/auth/RedirectIfAuthed";
@@ -7,7 +7,8 @@ import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { AuthCallbackPage } from "@/pages/AuthCallbackPage";
 import { SpacesPage } from "@/pages/SpacesPage";
-import { ExpensesPage } from "@/pages/ExpensesPage";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { HomeRedirect, LegacyExpensesRedirect } from "@/app/redirects";
 
 export const router = createBrowserRouter([
   {
@@ -35,9 +36,10 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="/spaces" replace /> },
+      { index: true, element: <HomeRedirect /> },
       { path: "spaces", element: <SpacesPage /> },
-      { path: "spaces/:spaceId/expenses", element: <ExpensesPage /> },
+      { path: "spaces/:spaceId", element: <DashboardPage /> },
+      { path: "spaces/:spaceId/expenses", element: <LegacyExpensesRedirect /> },
     ],
   },
 ]);

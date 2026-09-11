@@ -1,21 +1,22 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useParams } from "react-router-dom";
 
-/** App shell: header + routed content. */
+import { ProfileMenu } from "@/pages/dashboard/ProfileMenu";
+import { SpaceSwitcher } from "@/pages/dashboard/SpaceSwitcher";
+
+/** App shell: header (brand + space switcher + profile) and routed content. */
 export default function App() {
-  const { pathname } = useLocation();
+  const { spaceId } = useParams();
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="border-b border-gray-200 bg-white">
-        <nav className="mx-auto flex max-w-4xl items-center gap-4 px-4 py-3">
-          <Link to="/" className="font-semibold">
-            Журнал расходов
-          </Link>
-          <Link
-            to="/spaces"
-            className={pathname.startsWith("/spaces") ? "text-blue-600" : "text-gray-500"}
-          >
-            Пространства
-          </Link>
+    <div className="bg-background text-foreground min-h-screen">
+      <header className="bg-background sticky top-0 z-10 border-b">
+        <nav className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Link to="/" className="font-semibold whitespace-nowrap">
+              Журнал расходов
+            </Link>
+            <SpaceSwitcher activeSpaceId={spaceId} />
+          </div>
+          <ProfileMenu />
         </nav>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-6">

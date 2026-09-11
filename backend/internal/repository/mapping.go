@@ -61,6 +61,9 @@ func userFromSQLC(u sqlc.User) domain.User {
 		ID:        u.ID,
 		Email:     u.Email,
 		Name:      u.Name,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Phone:     u.Phone,
 		AvatarURL: u.AvatarUrl,
 		CreatedAt: u.CreatedAt,
 	}

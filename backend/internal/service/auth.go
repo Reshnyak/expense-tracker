@@ -47,9 +47,17 @@ func (s *Service) CompleteGoogleLogin(ctx context.Context, code, state string) (
 	if name == "" {
 		name = profile.Email
 	}
+	// Prefer Google's structured given_name/family_name; fall back to
+	// splitting the combined name when Google didn't return them.
+	firstName, lastName := emptyToNil(profile.GivenName), emptyToNil(profile.FamilyName)
+	if firstName == nil && lastName == nil {
+		firstName, lastName = splitDisplayName(name)
+	}
 	user, err := s.store.Users().UpsertFromGoogle(ctx, domain.GoogleUpsert{
 		Email:     profile.Email,
 		Name:      name,
+		FirstName: firstName,
+		LastName:  lastName,
 		AvatarURL: emptyToNil(profile.Picture),
 		GoogleSub: profile.Sub,
 	})
@@ -74,7 +82,8 @@ func (s *Service) DevLogin(ctx context.Context, email, name string) (dto.TokenPa
 	if name == "" {
 		name = email
 	}
-	user, err := s.store.Users().UpsertByEmail(ctx, email, name)
+	firstName, lastName := splitDisplayName(name)
+	user, err := s.store.Users().UpsertByEmail(ctx, email, name, firstName, lastName)
 	if err != nil {
 		return dto.TokenPair{}, err
 	}
@@ -99,7 +108,8 @@ func (s *Service) Register(ctx context.Context, email, password, name string) (d
 	if err != nil {
 		return dto.TokenPair{}, err
 	}
-	user, err := s.store.Users().CreateLocal(ctx, email, name, hash)
+	firstName, lastName := splitDisplayName(name)
+	user, err := s.store.Users().CreateLocal(ctx, email, name, firstName, lastName, hash)
 	if err != nil {
 		if errors.Is(err, domain.ErrConflict) {
 			return dto.TokenPair{}, fmt.Errorf("%w: email already registered", domain.ErrConflict)
@@ -172,6 +182,36 @@ func (s *Service) Logout(ctx context.Context, userID uuid.UUID) error {
 // Me returns the authenticated user.
 func (s *Service) Me(ctx context.Context, userID uuid.UUID) (dto.User, error) {
 	u, err := s.store.Users().GetByID(ctx, userID)
+	if err != nil {
+		return dto.User{}, err
+	}
+	return userToDTO(u), nil
+}
+
+// UpdateMe writes the editable profile fields (first/last name, phone) and
+// recomputes the display name from the parts, keeping the previous name when
+// both parts are cleared.
+func (s *Service) UpdateMe(ctx context.Context, userID uuid.UUID, in dto.UpdateMeInput) (dto.User, error) {
+	current, err := s.store.Users().GetByID(ctx, userID)
+	if err != nil {
+		return dto.User{}, err
+	}
+
+	first := strings.TrimSpace(in.FirstName)
+	last := strings.TrimSpace(in.LastName)
+	phone := strings.TrimSpace(in.Phone)
+
+	name := strings.TrimSpace(first + " " + last)
+	if name == "" {
+		name = current.Name
+	}
+
+	u, err := s.store.Users().UpdateProfile(ctx, userID, domain.ProfileUpdate{
+		FirstName: emptyToNil(first),
+		LastName:  emptyToNil(last),
+		Phone:     emptyToNil(phone),
+		Name:      name,
+	})
 	if err != nil {
 		return dto.User{}, err
 	}

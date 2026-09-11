@@ -110,3 +110,21 @@ func (h *Handlers) Me(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, user)
 }
+
+// PATCH /api/v1/me
+func (h *Handlers) UpdateMe(c *gin.Context) {
+	uid, ok := h.currentUser(c)
+	if !ok {
+		return
+	}
+	var in dto.UpdateMeInput
+	if !bindJSON(c, &in) {
+		return
+	}
+	user, err := h.Svc.UpdateMe(c.Request.Context(), uid, in)
+	if err != nil {
+		h.respondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}

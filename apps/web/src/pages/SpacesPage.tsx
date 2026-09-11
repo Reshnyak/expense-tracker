@@ -1,40 +1,56 @@
-import { Link } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import { Loader2, Plus } from "lucide-react";
 
+import { CreateSpaceDialog } from "@/pages/dashboard/CreateSpaceDialog";
 import { useSpaces } from "@/features/spaces/useSpaces";
-import { useAuth } from "@/shared/auth/AuthContext";
+import { getLastSpaceId } from "@/shared/lib/lastSpace";
+import { Button } from "@/shared/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 
+/**
+ * `/spaces` is a resolver, not a list: send the user into a space (the last one
+ * they opened, or the first available), or show onboarding when they have none.
+ */
 export function SpacesPage() {
-  const { user, logout } = useAuth();
   const { data: spaces, isLoading, error } = useSpaces();
 
+  if (isLoading) {
+    return (
+      <p className="text-muted-foreground flex items-center gap-2">
+        <Loader2 className="size-4 animate-spin" /> Загрузка…
+      </p>
+    );
+  }
+
+  if (error) {
+    return <p className="text-destructive">Не удалось загрузить пространства.</p>;
+  }
+
+  if (spaces && spaces.length > 0) {
+    const last = getLastSpaceId();
+    const target = spaces.find((s) => s.id === last) ?? spaces[0];
+    return <Navigate to={`/spaces/${target.id}`} replace />;
+  }
+
   return (
-    <section>
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Ваши пространства</h2>
-        <div className="text-sm text-gray-500">
-          {user?.email}
-          <button onClick={logout} className="ml-3 text-blue-600 hover:underline">
-            Выйти
-          </button>
-        </div>
-      </div>
-
-      {isLoading && <p className="mt-4 text-gray-500">Загрузка…</p>}
-      {error && <p className="mt-4 text-red-600">Не удалось загрузить пространства.</p>}
-
-      <ul className="mt-4 divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
-        {spaces?.map((s) => (
-          <li key={s.id} className="px-4 py-3">
-            <Link to={`/spaces/${s.id}/expenses`} className="text-blue-600 hover:underline">
-              {s.name}
-            </Link>
-            <span className="ml-2 text-xs text-gray-400">{s.currency}</span>
-          </li>
-        ))}
-        {spaces?.length === 0 && (
-          <li className="px-4 py-3 text-gray-500">Пока нет пространств.</li>
-        )}
-      </ul>
-    </section>
+    <div className="mx-auto max-w-md">
+      <Card>
+        <CardHeader>
+          <CardTitle>Создайте первое пространство</CardTitle>
+          <CardDescription>
+            Пространство — это общий журнал расходов: пригласите участников и
+            записывайте траты, балансы посчитаются сами.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CreateSpaceDialog>
+            <Button className="w-full">
+              <Plus className="size-4" />
+              Новое пространство
+            </Button>
+          </CreateSpaceDialog>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

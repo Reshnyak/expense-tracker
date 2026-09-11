@@ -193,6 +193,33 @@ func TestRefresh_RotatesAndInvalidatesOldToken(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestDevLogin_SplitsNameAndPreservesEditsOnRelogin(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, true)
+
+	_, err := svc.DevLogin(ctx, "dev2@example.com", "Anna Karenina")
+	require.NoError(t, err)
+
+	u, err := fs.Users().GetByEmail(ctx, "dev2@example.com")
+	require.NoError(t, err)
+	require.NotNil(t, u.FirstName)
+	assert.Equal(t, "Anna", *u.FirstName)
+	require.NotNil(t, u.LastName)
+	assert.Equal(t, "Karenina", *u.LastName)
+
+	// A returning user who has since edited their own profile keeps that
+	// edit across a repeat dev-login, even if a different name is passed.
+	_, err = svc.UpdateMe(ctx, u.ID, dto.UpdateMeInput{FirstName: "Custom", LastName: "Name"})
+	require.NoError(t, err)
+
+	_, err = svc.DevLogin(ctx, "dev2@example.com", "Someone Else")
+	require.NoError(t, err)
+
+	after, err := fs.Users().GetByEmail(ctx, "dev2@example.com")
+	require.NoError(t, err)
+	assert.Equal(t, "Custom Name", after.Name)
+}
+
 func TestRegister_IssuesTokensAndLoginWorks(t *testing.T) {
 	ctx := context.Background()
 	svc, _ := newTestService(t, false)
@@ -206,6 +233,21 @@ func TestRegister_IssuesTokensAndLoginWorks(t *testing.T) {
 	loginPair, err := svc.Login(ctx, "alice@example.com", "s3cret-password")
 	require.NoError(t, err)
 	assert.NotEmpty(t, loginPair.AccessToken)
+}
+
+func TestRegister_SplitsNameIntoFirstLast(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+
+	_, err := svc.Register(ctx, "split@example.com", "s3cret-password", "Ivan Petrov")
+	require.NoError(t, err)
+
+	u, err := fs.Users().GetByEmail(ctx, "split@example.com")
+	require.NoError(t, err)
+	require.NotNil(t, u.FirstName)
+	assert.Equal(t, "Ivan", *u.FirstName)
+	require.NotNil(t, u.LastName)
+	assert.Equal(t, "Petrov", *u.LastName)
 }
 
 func TestRegister_DuplicateEmailConflicts(t *testing.T) {
@@ -268,4 +310,96 @@ func TestCreateCategory_DuplicateNameConflicts(t *testing.T) {
 	require.NoError(t, err)
 	_, err = svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
 	assert.ErrorIs(t, err, domain.ErrConflict)
+}
+
+func TestUpdateCategory_RenamesAndRejectsNonMember(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	outsider := seedUser(fs, "outsider@example.com")
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+
+	cat, err := svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
+	require.NoError(t, err)
+	catID := uuid.MustParse(cat.ID)
+
+	updated, err := svc.UpdateCategory(ctx, owner.ID, spaceID, catID, dto.CategoryInput{Name: "Groceries", Color: "#00ff00"})
+	require.NoError(t, err)
+	assert.Equal(t, "Groceries", updated.Name)
+	require.NotNil(t, updated.Color)
+	assert.Equal(t, "#00ff00", *updated.Color)
+
+	_, err = svc.UpdateCategory(ctx, outsider.ID, spaceID, catID, dto.CategoryInput{Name: "Nope"})
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestUpdateCategory_DuplicateNameConflicts(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+
+	_, err = svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
+	require.NoError(t, err)
+	travel, err := svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Travel"})
+	require.NoError(t, err)
+
+	_, err = svc.UpdateCategory(ctx, owner.ID, spaceID, uuid.MustParse(travel.ID), dto.CategoryInput{Name: "Food"})
+	assert.ErrorIs(t, err, domain.ErrConflict)
+}
+
+func TestUpdateMe_SetsPartsAndRecomputesName(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	u := seedUser(fs, "u@example.com")
+	fs.users[u.ID] = domain.User{ID: u.ID, Email: u.Email, Name: "Old Name", CreatedAt: u.CreatedAt}
+
+	got, err := svc.UpdateMe(ctx, u.ID, dto.UpdateMeInput{
+		FirstName: "  Анна ", LastName: "Каренина", Phone: " +7 900 111 22 33 ",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "Анна Каренина", got.Name)
+	require.NotNil(t, got.FirstName)
+	assert.Equal(t, "Анна", *got.FirstName)
+	require.NotNil(t, got.Phone)
+	assert.Equal(t, "+7 900 111 22 33", *got.Phone)
+	assert.Equal(t, "u@example.com", got.Email)
+}
+
+func TestUpdateMe_EmptyPartsKeepPreviousName(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	u := seedUser(fs, "u@example.com")
+	fs.users[u.ID] = domain.User{ID: u.ID, Email: u.Email, Name: "Keep Me", CreatedAt: u.CreatedAt}
+
+	got, err := svc.UpdateMe(ctx, u.ID, dto.UpdateMeInput{Phone: "12345"})
+	require.NoError(t, err)
+	assert.Equal(t, "Keep Me", got.Name)
+	assert.Nil(t, got.FirstName)
+	assert.Nil(t, got.LastName)
+}
+
+func TestDeleteCategory_RemovesAndIsIdempotentlyNotFound(t *testing.T) {
+	ctx := context.Background()
+	svc, fs := newTestService(t, false)
+	owner := seedUser(fs, "owner@example.com")
+	space, err := svc.CreateSpace(ctx, owner.ID, dto.SpaceInput{Name: "Trip"})
+	require.NoError(t, err)
+	spaceID := uuid.MustParse(space.ID)
+
+	cat, err := svc.CreateCategory(ctx, owner.ID, spaceID, dto.CategoryInput{Name: "Food"})
+	require.NoError(t, err)
+	catID := uuid.MustParse(cat.ID)
+
+	require.NoError(t, svc.DeleteCategory(ctx, owner.ID, spaceID, catID))
+
+	cats, err := svc.ListCategories(ctx, owner.ID, spaceID)
+	require.NoError(t, err)
+	assert.Empty(t, cats)
+
+	assert.ErrorIs(t, svc.DeleteCategory(ctx, owner.ID, spaceID, catID), domain.ErrNotFound)
 }

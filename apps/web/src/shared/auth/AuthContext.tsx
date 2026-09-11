@@ -11,6 +11,8 @@ interface AuthState {
   isLoading: boolean;
   loginWithTokens: (access: string, refresh: string) => void;
   logout: () => void;
+  /** Re-fetch `GET /v1/me` (e.g. after the user edits their profile). */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -32,6 +34,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // Re-fetch the user WITHOUT touching the app-wide `isLoading` gate.
+  // `isLoading` is what `RequireAuth` uses to decide whether to unmount the
+  // whole authenticated app behind a full-page spinner — appropriate for the
+  // initial "are we signed in?" check, but not for a background refresh like
+  // "the user just edited their own profile".
+  const refreshUser = useCallback(async () => {
+    if (!getAccessToken()) return;
+    try {
+      setUser(await api.get<User>("/v1/me"));
+    } catch {
+      // keep the previously loaded user on a transient failure
     }
   }, []);
 
@@ -58,8 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       loginWithTokens,
       logout,
+      refreshUser,
     }),
-    [user, isLoading, loginWithTokens, logout],
+    [user, isLoading, loginWithTokens, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

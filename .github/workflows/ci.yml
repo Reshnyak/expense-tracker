@@ -4,6 +4,17 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  SQLC_VERSION: v1.31.1
 
 jobs:
   backend:
@@ -11,20 +22,60 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: tracker
+          POSTGRES_PASSWORD: tracker
+          POSTGRES_DB: tracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tracker"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://tracker:tracker@localhost:5432/tracker?sslmode=disable
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25"
           cache-dependency-path: backend/go.sum
-      - run: go mod download
+      # The Go module proxy occasionally drops the connection mid-download;
+      # retry a few times instead of failing the whole run on a blip.
+      - name: Download Go modules
+        run: |
+          n=0
+          until go mod download; do
+            n=$((n + 1))
+            if [ "$n" -ge 3 ]; then exit 1; fi
+            echo "go mod download failed (attempt $n/3), retrying in 10s..." >&2
+            sleep 10
+          done
+      # internal/db/sqlc is generated and git-ignored (see CLAUDE.md) — nothing
+      # in this module builds without it.
+      - name: Install sqlc
+        run: |
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@${{ env.SQLC_VERSION }}
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Generate sqlc code
+        run: sqlc generate
       - run: go build ./...
       - run: go vet ./...
-      - uses: golangci/golangci-lint-action@v6
+      # v6 only supports golangci-lint v1; this repo's .golangci.yml is
+      # schema v2 (golangci-lint v2.x), which needs the v7 action.
+      - uses: golangci/golangci-lint-action@v7
         with:
-          version: latest
+          version: v2.11.4
           working-directory: backend
       - run: go test ./...
+      # Cheap regression check: the hand-written goose SQL actually applies
+      # cleanly against a real Postgres, not just "parses" for sqlc.
+      - name: Apply migrations (smoke test)
+        run: go run ./cmd/migrate -command up
 
   web:
     runs-on: ubuntu-latest
@@ -33,9 +84,10 @@ jobs:
         working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
+      # No `version:` here — pnpm/action-setup rejects that combined with the
+      # `packageManager` field in the root package.json ("multiple versions
+      # of pnpm specified"); the field alone already pins pnpm@9.15.0.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 22

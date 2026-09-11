@@ -43,3 +43,21 @@ func (r *categoryRepo) Get(ctx context.Context, id, spaceID uuid.UUID) (domain.C
 	}
 	return categoryFromSQLC(c), nil
 }
+
+func (r *categoryRepo) Update(ctx context.Context, id, spaceID uuid.UUID, in domain.CategoryInput) (domain.Category, error) {
+	c, err := r.q.UpdateCategory(ctx, sqlc.UpdateCategoryParams{
+		ID:      id,
+		SpaceID: spaceID,
+		Name:    in.Name,
+		Color:   in.Color,
+		Icon:    in.Icon,
+	})
+	if err != nil {
+		return domain.Category{}, mapErr(err)
+	}
+	return categoryFromSQLC(c), nil
+}
+
+func (r *categoryRepo) Delete(ctx context.Context, id, spaceID uuid.UUID) error {
+	return mapErr(r.q.DeleteCategory(ctx, sqlc.DeleteCategoryParams{ID: id, SpaceID: spaceID}))
+}
