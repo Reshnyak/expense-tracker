@@ -36,7 +36,9 @@ export function SpacesPage() {
     <div className="mx-auto max-w-md">
       <Card>
         <CardHeader>
-          <CardTitle>Создайте первое пространство</CardTitle>
+          <CardTitle className="font-serif text-2xl font-semibold">
+            Создайте первое пространство
+          </CardTitle>
           <CardDescription>
             Пространство — это общий журнал расходов: пригласите участников и
             записывайте траты, балансы посчитаются сами.

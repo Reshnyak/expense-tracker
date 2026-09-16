@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/ui/card";
+import { FernBackdrop } from "@/shared/ui/fern-backdrop";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 
@@ -33,11 +34,12 @@ export function LoginPage() {
   const redirectTo = sanitizeRedirect(state?.from?.pathname);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted p-4">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
+      <FernBackdrop className="absolute -bottom-16 -left-20 h-[30rem] w-[30rem] md:h-[36rem] md:w-[36rem]" />
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>
-            <h1 className="text-xl">Вход</h1>
+            <h1 className="font-serif text-3xl font-semibold italic">Вход</h1>
           </CardTitle>
           <CardDescription>Общий журнал расходов</CardDescription>
         </CardHeader>
@@ -70,7 +72,7 @@ export function LoginPage() {
         <CardFooter className="justify-center">
           <p className="text-muted-foreground text-sm">
             Нет аккаунта?{" "}
-            <Link to="/register" className="text-foreground underline underline-offset-4">
+            <Link to="/register" className="text-primary font-medium underline underline-offset-4">
               Зарегистрируйтесь
             </Link>
           </p>

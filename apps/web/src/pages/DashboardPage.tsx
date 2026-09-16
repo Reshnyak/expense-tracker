@@ -97,8 +97,8 @@ export function DashboardPage() {
   return (
     <section className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold">{space?.name}</h1>
+        <div className="flex items-center gap-2.5">
+          <h1 className="font-serif text-2xl font-semibold">{space?.name}</h1>
           <Badge variant="secondary">{currency}</Badge>
         </div>
         <MembersBar spaceId={spaceId} members={memberList} />

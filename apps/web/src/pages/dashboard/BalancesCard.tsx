@@ -100,9 +100,9 @@ export function BalancesCard({
                       <span className="flex shrink-0 flex-col items-end">
                         <span
                           className={cn(
-                            "tabular-nums font-medium",
+                            "tabular-nums font-semibold",
                             settled && "text-muted-foreground",
-                            owed && "text-emerald-600 dark:text-emerald-400",
+                            owed && "text-resin",
                             !owed && !settled && "text-destructive",
                           )}
                         >
@@ -146,11 +146,14 @@ export function BalancesCard({
                       <li key={r.key} className="space-y-1">
                         <div className="flex items-center justify-between gap-2 text-sm">
                           <span className="flex min-w-0 items-center gap-1.5">
-                            <span
+                            <svg
                               aria-hidden
-                              className="size-2 shrink-0 rounded-full"
-                              style={{ background: r.color ?? "var(--muted-foreground)" }}
-                            />
+                              viewBox="0 0 24 24"
+                              className="size-2.5 shrink-0"
+                              style={{ fill: r.color ?? "var(--muted-foreground)" }}
+                            >
+                              <path d="M20 4C10 4 4 10 4 20c10 0 16-6 16-16Z" />
+                            </svg>
                             <span className="truncate">
                               {r.icon ? `${r.icon} ` : ""}
                               {r.label}

@@ -4,55 +4,68 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --radius: 0.85rem;
+
+  /* Dappled glade (light) */
+  --background: #e9f0dd;
+  --foreground: #1c2a1e;
+  --card: #f2f4e6;
+  --card-foreground: #1c2a1e;
+  --popover: #f2f4e6;
+  --popover-foreground: #1c2a1e;
+  --primary: #3e6b49;
+  --primary-foreground: #f4f7ec;
+  --secondary: #dce4cb;
+  --secondary-foreground: #25352a;
+  --muted: #dfe6d1;
+  --muted-foreground: #5b6b54;
+  --accent: #e4d9b8;
+  --accent-foreground: #3b2a12;
+  --destructive: #8a3b3b;
+  --destructive-foreground: #fbf1ec;
+  --border: #bcc5a3;
+  --input: #bcc5a3;
+  --ring: #b07c2c;
+
+  /* Woodland extras, referenced directly by feature components */
+  --resin: #b07c2c;
+  --resin-foreground: #3b2a12;
+  --positive: #3e6b49;
+  --leaf: #3e6b49;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: #0f1a13;
+  --foreground: #e6eeda;
+  --card: #16241a;
+  --card-foreground: #e6eeda;
+  --popover: #16241a;
+  --popover-foreground: #e6eeda;
+  --primary: #6fa57c;
+  --primary-foreground: #0f2010;
+  --secondary: #22301f;
+  --secondary-foreground: #dbe5cc;
+  --muted: #1b2a1a;
+  --muted-foreground: #9bae8e;
+  --accent: #2e3b22;
+  --accent-foreground: #ead9a8;
+  --destructive: #c97575;
+  --destructive-foreground: #2a1414;
+  --border: #2c3a28;
+  --input: #2c3a28;
+  --ring: #d6a356;
+
+  --resin: #d6a356;
+  --resin-foreground: #2e2410;
+  --positive: #7fb98c;
+  --leaf: #7fb98c;
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 6px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -72,13 +85,54 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-resin: var(--resin);
+  --color-resin-foreground: var(--resin-foreground);
+  --color-positive: var(--positive);
+
+  --font-sans:
+    "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Cormorant", "Iowan Old Style", Georgia, serif;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  html {
+    color-scheme: light;
   }
+  .dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    background-image:
+      radial-gradient(
+        ellipse 900px 560px at 12% -12%,
+        color-mix(in oklab, var(--primary) 16%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 700px 520px at 105% 0%,
+        color-mix(in oklab, var(--ring) 14%, transparent),
+        transparent 55%
+      ),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-attachment: fixed, fixed, fixed;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
+  }
+}
+
+/* A soft, hand-cut journal-page shape: three gently rounded corners and one
+   tucked-in corner, standing in for the uniform-rounded-rectangle SaaS card. */
+@utility leaf-panel {
+  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
 }

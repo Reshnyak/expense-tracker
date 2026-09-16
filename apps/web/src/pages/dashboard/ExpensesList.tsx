@@ -47,13 +47,13 @@ export function ExpensesList({
 }: ListProps) {
   if (expenses.length === 0) {
     return (
-      <p className="text-muted-foreground rounded-md border border-dashed px-4 py-8 text-center text-sm">
+      <p className="text-muted-foreground leaf-panel border-border/70 border border-dashed px-4 py-8 text-center text-sm">
         Расходов пока нет.
       </p>
     );
   }
   return (
-    <ul className="divide-y rounded-md border">
+    <ul className="leaf-panel border-border/70 divide-border/70 divide-y border">
       {expenses.map((e) => (
         <ExpenseRow
           key={e.id}
@@ -91,55 +91,59 @@ function ExpenseRow({
   const category = categories.find((c) => c.id === expense.category_id);
 
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
-      <div className="w-20 shrink-0 text-xs text-muted-foreground tabular-nums">
-        {formatDate(expense.spent_at)}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate">
-            {expense.description || <span className="text-muted-foreground">Без описания</span>}
-          </span>
-          {category && (
-            <Badge
-              variant="outline"
-              className="shrink-0 gap-1"
-              style={
-                category.color
-                  ? { borderColor: category.color, color: category.color }
-                  : undefined
-              }
-            >
-              {category.icon ? <span>{category.icon}</span> : null}
-              {category.name}
-            </Badge>
-          )}
+    <li className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex min-w-0 items-center gap-3 sm:contents">
+        <div className="w-16 shrink-0 text-xs text-muted-foreground tabular-nums sm:w-20">
+          {formatDate(expense.spent_at)}
         </div>
-        <div className="text-muted-foreground truncate text-xs">{payerName}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="truncate">
+              {expense.description || <span className="text-muted-foreground">Без описания</span>}
+            </span>
+            {category && (
+              <Badge
+                variant="outline"
+                className="shrink-0 gap-1"
+                style={
+                  category.color
+                    ? { borderColor: category.color, color: category.color }
+                    : undefined
+                }
+              >
+                {category.icon ? <span>{category.icon}</span> : null}
+                {category.name}
+              </Badge>
+            )}
+          </div>
+          <div className="text-muted-foreground truncate text-xs">{payerName}</div>
+        </div>
       </div>
-      <div className="shrink-0 tabular-nums font-medium">
-        {formatCents(expense.amount_cents, expense.currency || currency)}
+      <div className="flex items-center justify-between gap-2 sm:contents">
+        <div className="shrink-0 tabular-nums font-semibold sm:ml-auto">
+          {formatCents(expense.amount_cents, expense.currency || currency)}
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Действия с расходом">
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+              <Pencil className="size-4" />
+              Изменить
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="size-4" />
+              Удалить
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Действия с расходом">
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setEditOpen(true)}>
-            <Pencil className="size-4" />
-            Изменить
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={() => setDeleteOpen(true)}
-          >
-            <Trash2 className="size-4" />
-            Удалить
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
 
       <ExpenseFormDialog
         spaceId={spaceId}
