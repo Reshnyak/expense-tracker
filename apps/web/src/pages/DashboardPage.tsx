@@ -32,10 +32,11 @@ export function DashboardPage() {
   const { data: balances } = useBalances(spaceId);
 
   const [filters, setFilters] = useState<ExpenseFilters>({});
-  const { data: list, isLoading: expensesLoading, error: expensesError } = useExpenses(
-    spaceId,
-    filters,
-  );
+  const {
+    data: list,
+    isLoading: expensesLoading,
+    error: expensesError,
+  } = useExpenses(spaceId, filters);
 
   const [page, setPage] = useState(1);
 
@@ -57,10 +58,7 @@ export function DashboardPage() {
   const truncated = items.length >= MAX_ROWS;
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
-  const pageItems = items.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
-  );
+  const pageItems = items.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   if (spacesLoading) {
     return (
@@ -148,9 +146,8 @@ export function DashboardPage() {
           {truncated && (
             <p className="text-muted-foreground text-xs">
               Показаны только последние {MAX_ROWS} расходов
-              {isDateFiltered ? " за выбранный период" : ""} — более ранние
-              могли не загрузиться. Сузьте диапазон дат «С» / «По», чтобы
-              увидеть их.
+              {isDateFiltered ? " за выбранный период" : ""} — более ранние могли не загрузиться.
+              Сузьте диапазон дат «С» / «По», чтобы увидеть их.
             </p>
           )}
           <ExpensesList

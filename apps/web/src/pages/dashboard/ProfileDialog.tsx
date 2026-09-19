@@ -64,9 +64,7 @@ export function ProfileDialog({ open, onOpenChange, children }: Props) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Профиль</DialogTitle>
-          <DialogDescription>
-            Имя видят другие участники ваших пространств.
-          </DialogDescription>
+          <DialogDescription>Имя видят другие участники ваших пространств.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} noValidate className="flex flex-col gap-4">
           <div className="flex gap-3">
@@ -106,9 +104,7 @@ export function ProfileDialog({ open, onOpenChange, children }: Props) {
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="profile-email">Email</Label>
             <Input id="profile-email" value={user?.email ?? ""} disabled readOnly />
-            <p className="text-muted-foreground text-xs">
-              Email входа изменить нельзя.
-            </p>
+            <p className="text-muted-foreground text-xs">Email входа изменить нельзя.</p>
           </div>
           {error && (
             <p role="alert" className="text-destructive text-xs">

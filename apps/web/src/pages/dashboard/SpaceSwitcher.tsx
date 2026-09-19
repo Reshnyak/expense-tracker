@@ -50,10 +50,7 @@ export function SpaceSwitcher({ activeSpaceId }: { activeSpaceId?: string }) {
           {spaces?.map((s) => (
             <DropdownMenuItem key={s.id} onSelect={() => open(s.id)}>
               <Check
-                className={cn(
-                  "size-4",
-                  s.id === activeSpaceId ? "opacity-100" : "opacity-0",
-                )}
+                className={cn("size-4", s.id === activeSpaceId ? "opacity-100" : "opacity-0")}
               />
               <span className="flex-1 truncate">{s.name}</span>
               <span className="text-muted-foreground text-xs">{s.currency}</span>

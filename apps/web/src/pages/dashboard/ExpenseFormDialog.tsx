@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-import {
-  useCreateExpense,
-  useUpdateExpense,
-} from "@/features/expenses/useExpenses";
+import { useCreateExpense, useUpdateExpense } from "@/features/expenses/useExpenses";
 import type { Category, Expense, ExpenseInput, SpaceMember } from "@/shared/api/types";
 import { centsToAmountInput, parseAmountToCents } from "@/shared/lib/money";
 import { Button } from "@/shared/ui/button";
@@ -17,13 +14,7 @@ import {
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
 const NO_CATEGORY = "none";
 

@@ -24,7 +24,13 @@ vi.mock("./tokenStore", () => ({
 
 const { AuthProvider, useAuth } = await import("./AuthContext");
 
-const anna = { id: "u1", email: "a@example.com", name: "Anna", avatar_url: null, created_at: "2026-01-01T00:00:00Z" };
+const anna = {
+  id: "u1",
+  email: "a@example.com",
+  name: "Anna",
+  avatar_url: null,
+  created_at: "2026-01-01T00:00:00Z",
+};
 
 function Probe() {
   const { user, isLoading, refreshUser } = useAuth();

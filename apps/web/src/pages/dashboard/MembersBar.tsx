@@ -11,13 +11,7 @@ import { MembersListDialog } from "./MembersListDialog";
 
 const MAX_SHOWN = 5;
 
-export function MembersBar({
-  spaceId,
-  members,
-}: {
-  spaceId: string;
-  members: SpaceMember[];
-}) {
+export function MembersBar({ spaceId, members }: { spaceId: string; members: SpaceMember[] }) {
   const shown = members.slice(0, MAX_SHOWN);
   const rest = members.length - shown.length;
 

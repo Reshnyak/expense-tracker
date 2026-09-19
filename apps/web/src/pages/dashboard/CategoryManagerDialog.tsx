@@ -50,8 +50,8 @@ export function CategoryManagerDialog({
         <DialogHeader>
           <DialogTitle>Категории</DialogTitle>
           <DialogDescription>
-            Ярлыки для расходов внутри пространства. Удаление категории не трогает
-            сами расходы — у них просто снимается ярлык.
+            Ярлыки для расходов внутри пространства. Удаление категории не трогает сами расходы — у
+            них просто снимается ярлык.
           </DialogDescription>
         </DialogHeader>
 
@@ -202,9 +202,7 @@ function CategoryRow({ spaceId, category }: { spaceId: string; category: Categor
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Отмена</AlertDialogCancel>
-              <AlertDialogAction onClick={() => del.mutate(category.id)}>
-                Удалить
-              </AlertDialogAction>
+              <AlertDialogAction onClick={() => del.mutate(category.id)}>Удалить</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -281,7 +279,11 @@ function AddCategoryForm({ spaceId }: { spaceId: string }) {
           className="flex-1"
         />
         <Button type="submit" size="sm" disabled={create.isPending}>
-          {create.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+          {create.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Plus className="size-4" />
+          )}
           Добавить
         </Button>
       </div>

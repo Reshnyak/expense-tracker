@@ -38,13 +38,7 @@ interface ListProps {
   currency: string;
 }
 
-export function ExpensesList({
-  spaceId,
-  expenses,
-  members,
-  categories,
-  currency,
-}: ListProps) {
+export function ExpensesList({ spaceId, expenses, members, categories, currency }: ListProps) {
   if (expenses.length === 0) {
     return (
       <p className="text-muted-foreground leaf-panel border-border/70 border border-dashed px-4 py-8 text-center text-sm">
@@ -134,10 +128,7 @@ function ExpenseRow({
               <Pencil className="size-4" />
               Изменить
             </DropdownMenuItem>
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => setDeleteOpen(true)}
-            >
+            <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
               <Trash2 className="size-4" />
               Удалить
             </DropdownMenuItem>
@@ -167,8 +158,7 @@ function ExpenseRow({
             <AlertDialogTitle>Удалить расход?</AlertDialogTitle>
             <AlertDialogDescription>
               {formatCents(expense.amount_cents, expense.currency || currency)}
-              {expense.description ? ` · ${expense.description}` : ""}. Действие
-              необратимо.
+              {expense.description ? ` · ${expense.description}` : ""}. Действие необратимо.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {deleteError && (
@@ -187,8 +177,7 @@ function ExpenseRow({
                 setDeleteError(null);
                 del.mutate(expense.id, {
                   onSuccess: () => setDeleteOpen(false),
-                  onError: () =>
-                    setDeleteError("Не удалось удалить расход. Попробуйте позже."),
+                  onError: () => setDeleteError("Не удалось удалить расход. Попробуйте позже."),
                 });
               }}
             >

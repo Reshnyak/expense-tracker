@@ -9,8 +9,7 @@ const balanceKey = (spaceId: string) => ["spaces", spaceId, "balances"] as const
 export function useMembers(spaceId: string) {
   return useQuery({
     queryKey: key(spaceId),
-    queryFn: ({ signal }) =>
-      api.get<SpaceMember[]>(`/v1/spaces/${spaceId}/members`, signal),
+    queryFn: ({ signal }) => api.get<SpaceMember[]>(`/v1/spaces/${spaceId}/members`, signal),
     enabled: !!spaceId,
   });
 }

@@ -171,7 +171,12 @@ function CredentialsForm() {
         )}
       </div>
 
-      <Button type="submit" className="w-full" disabled={login.isPending} aria-busy={login.isPending}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={login.isPending}
+        aria-busy={login.isPending}
+      >
         {login.isPending ? "Входим…" : "Войти"}
       </Button>
     </form>

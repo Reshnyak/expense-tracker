@@ -25,10 +25,7 @@ export function useExpenses(spaceId: string, filters: ExpenseFilters = {}) {
       const params = new URLSearchParams({ limit: String(MAX_ROWS) });
       if (filters.from) params.set("from", filters.from);
       if (filters.to) params.set("to", filters.to);
-      return api.get<ExpenseList>(
-        `/v1/spaces/${spaceId}/expenses?${params.toString()}`,
-        signal,
-      );
+      return api.get<ExpenseList>(`/v1/spaces/${spaceId}/expenses?${params.toString()}`, signal);
     },
     enabled: !!spaceId,
   });
@@ -42,10 +39,7 @@ export function useBalances(spaceId: string) {
   });
 }
 
-function invalidateSpace(
-  qc: ReturnType<typeof useQueryClient>,
-  spaceId: string,
-) {
+function invalidateSpace(qc: ReturnType<typeof useQueryClient>, spaceId: string) {
   void qc.invalidateQueries({ queryKey: listKey(spaceId) });
   void qc.invalidateQueries({ queryKey: balanceKey(spaceId) });
 }
@@ -53,8 +47,7 @@ function invalidateSpace(
 export function useCreateExpense(spaceId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: ExpenseInput) =>
-      api.post<Expense>(`/v1/spaces/${spaceId}/expenses`, input),
+    mutationFn: (input: ExpenseInput) => api.post<Expense>(`/v1/spaces/${spaceId}/expenses`, input),
     onSuccess: () => invalidateSpace(qc, spaceId),
   });
 }
@@ -71,8 +64,7 @@ export function useUpdateExpense(spaceId: string) {
 export function useDeleteExpense(spaceId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api.delete<void>(`/v1/spaces/${spaceId}/expenses/${id}`),
+    mutationFn: (id: string) => api.delete<void>(`/v1/spaces/${spaceId}/expenses/${id}`),
     onSuccess: () => invalidateSpace(qc, spaceId),
   });
 }

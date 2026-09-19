@@ -16,12 +16,7 @@ export function Pagination({
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="text-muted-foreground">Всего: {total}</span>
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page <= 1}
-          onClick={() => onPage(page - 1)}
-        >
+        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
           Назад
         </Button>
         <span className="text-muted-foreground tabular-nums">

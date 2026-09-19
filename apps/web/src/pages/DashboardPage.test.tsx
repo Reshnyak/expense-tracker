@@ -93,8 +93,7 @@ function mountGet(expenses: Expense[]) {
     if (url.endsWith("/members")) return Promise.resolve(members);
     if (url.endsWith("/categories")) return Promise.resolve([]);
     if (url.endsWith("/balances")) return Promise.resolve(balances);
-    if (url.includes("/expenses"))
-      return Promise.resolve({ items: expenses, next_cursor: null });
+    if (url.includes("/expenses")) return Promise.resolve({ items: expenses, next_cursor: null });
     return Promise.reject(new Error(`unexpected GET ${url}`));
   });
 }
@@ -149,9 +148,7 @@ describe("DashboardPage", () => {
     mountGet(makeExpenses(2));
     renderDashboard();
 
-    const card = (await screen.findByText("Балансы")).closest(
-      "[data-slot=card]",
-    ) as HTMLElement;
+    const card = (await screen.findByText("Балансы")).closest("[data-slot=card]") as HTMLElement;
     expect(within(card).getByText("Анна")).toBeInTheDocument();
     expect(within(card).getByText("Борис")).toBeInTheDocument();
     expect(within(card).getByText("должны вернуть")).toBeInTheDocument();
@@ -167,12 +164,8 @@ describe("DashboardPage", () => {
     mountGet(makeExpenses(1));
     renderDashboard();
 
-    await userEvent.click(
-      await screen.findByRole("button", { name: /Добавить расход/ }),
-    );
+    await userEvent.click(await screen.findByRole("button", { name: /Добавить расход/ }));
 
-    await waitFor(() =>
-      expect(screen.getByRole("dialog")).toHaveTextContent("Новый расход"),
-    );
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveTextContent("Новый расход"));
   });
 });

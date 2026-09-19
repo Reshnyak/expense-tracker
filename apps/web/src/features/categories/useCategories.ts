@@ -9,8 +9,7 @@ const expensesKey = (spaceId: string) => ["spaces", spaceId, "expenses"] as cons
 export function useCategories(spaceId: string) {
   return useQuery({
     queryKey: key(spaceId),
-    queryFn: ({ signal }) =>
-      api.get<Category[]>(`/v1/spaces/${spaceId}/categories`, signal),
+    queryFn: ({ signal }) => api.get<Category[]>(`/v1/spaces/${spaceId}/categories`, signal),
     enabled: !!spaceId,
   });
 }
@@ -41,8 +40,7 @@ export function useUpdateCategory(spaceId: string) {
 export function useDeleteCategory(spaceId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api.delete<void>(`/v1/spaces/${spaceId}/categories/${id}`),
+    mutationFn: (id: string) => api.delete<void>(`/v1/spaces/${spaceId}/categories/${id}`),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: key(spaceId) });
       // deleting a category clears category_id on its expenses (ON DELETE SET NULL)

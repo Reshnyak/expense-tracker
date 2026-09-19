@@ -130,9 +130,7 @@ describe("LoginPage — credentials form", () => {
     await user.type(screen.getByLabelText("Пароль"), "s3cret-password");
     await user.click(screen.getByRole("button", { name: "Войти" }));
 
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Входим…" })).toBeDisabled(),
-    );
+    await waitFor(() => expect(screen.getByRole("button", { name: "Входим…" })).toBeDisabled());
     resolve({ access_token: "a", refresh_token: "b", expires_in: 900 });
   });
 });

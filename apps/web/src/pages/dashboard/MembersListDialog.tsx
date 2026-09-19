@@ -46,9 +46,7 @@ export function MembersListDialog({
                       {m.role === "owner" ? "Владелец" : "Участник"}
                     </Badge>
                   </div>
-                  <div className="text-muted-foreground truncate text-xs">
-                    {m.user.email}
-                  </div>
+                  <div className="text-muted-foreground truncate text-xs">{m.user.email}</div>
                   <div className="text-muted-foreground text-xs">
                     {m.user.phone || "телефон не указан"}
                   </div>

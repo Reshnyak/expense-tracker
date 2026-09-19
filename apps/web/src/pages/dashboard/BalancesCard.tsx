@@ -46,10 +46,7 @@ export function BalancesCard({
       sum,
       rows: [...totals.entries()]
         .map(([key, cents]) => {
-          const cat =
-            key === UNCATEGORIZED
-              ? null
-              : (categories.find((c) => c.id === key) ?? null);
+          const cat = key === UNCATEGORIZED ? null : (categories.find((c) => c.id === key) ?? null);
           return {
             key,
             label: cat ? cat.name : "Без категории",
@@ -92,8 +89,7 @@ export function BalancesCard({
                       <span className="truncate">{nameOf(b.user_id)}</span>
                       <span className="text-muted-foreground text-xs tabular-nums">
                         внёс(ла) {formatCents(b.paid_cents, currency)}
-                        {splitEnabled &&
-                          ` · доля ${formatCents(b.share_cents, currency)}`}
+                        {splitEnabled && ` · доля ${formatCents(b.share_cents, currency)}`}
                       </span>
                     </span>
                     {splitEnabled && (
@@ -110,11 +106,7 @@ export function BalancesCard({
                           {formatCents(b.net_cents, currency)}
                         </span>
                         <span className="text-muted-foreground text-xs">
-                          {settled
-                            ? "в расчёте"
-                            : owed
-                              ? "должны вернуть"
-                              : "нужно доплатить"}
+                          {settled ? "в расчёте" : owed ? "должны вернуть" : "нужно доплатить"}
                         </span>
                       </span>
                     )}

@@ -14,8 +14,7 @@ export function useUpdateMe() {
     onSuccess: async () => {
       await refreshUser();
       void qc.invalidateQueries({
-        predicate: (q) =>
-          q.queryKey[0] === "spaces" && q.queryKey[2] === "members",
+        predicate: (q) => q.queryKey[0] === "spaces" && q.queryKey[2] === "members",
       });
     },
   });
