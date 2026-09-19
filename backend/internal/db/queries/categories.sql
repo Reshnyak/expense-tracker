@@ -10,3 +10,12 @@ ORDER BY name;
 
 -- name: GetCategory :one
 SELECT * FROM categories WHERE id = $1 AND space_id = $2;
+
+-- name: UpdateCategory :one
+UPDATE categories
+SET name = $3, color = $4, icon = $5
+WHERE id = $1 AND space_id = $2
+RETURNING *;
+
+-- name: DeleteCategory :exec
+DELETE FROM categories WHERE id = $1 AND space_id = $2;

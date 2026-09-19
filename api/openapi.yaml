@@ -186,6 +186,31 @@ paths:
               schema: { $ref: "#/components/schemas/User" }
         "401":
           $ref: "#/components/responses/Unauthorized"
+    patch:
+      tags: [auth]
+      summary: Update the current user's profile
+      description: >
+        Updates first/last name and phone. `name` is recomputed from the parts
+        (falls back to the previous name when both are empty). The login email is
+        not editable here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateMeInput" }
+      responses:
+        "200":
+          description: The updated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Invalid input
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /api/v1/spaces:
     get:
@@ -291,6 +316,39 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Category" }
+
+  /api/v1/spaces/{spaceId}/categories/{categoryId}:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+      - $ref: "#/components/parameters/CategoryId"
+    patch:
+      tags: [categories]
+      summary: Update a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [categories]
+      summary: Delete a category
+      description: >
+        Removes the category. Expenses that referenced it keep their history with
+        category_id cleared (ON DELETE SET NULL).
+      responses:
+        "204": { description: Deleted }
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/v1/spaces/{spaceId}/expenses:
     parameters:
@@ -400,6 +458,11 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
 
   responses:
     Unauthorized:
@@ -457,8 +520,18 @@ components:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
         name: { type: string }
+        first_name: { type: [string, "null"] }
+        last_name: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
         avatar_url: { type: [string, "null"] }
         created_at: { type: string, format: date-time }
+
+    UpdateMeInput:
+      type: object
+      properties:
+        first_name: { type: string, maxLength: 120 }
+        last_name: { type: string, maxLength: 120 }
+        phone: { type: string, maxLength: 32 }
 
     MemberRole:
       type: string

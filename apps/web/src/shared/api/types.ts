@@ -7,6 +7,7 @@ export type TokenPair = Schemas["TokenPair"];
 export type User = Schemas["User"];
 export type RegisterInput = Schemas["RegisterInput"];
 export type LoginInput = Schemas["LoginInput"];
+export type UpdateMeInput = Schemas["UpdateMeInput"];
 
 /**
  * Body of `POST /api/v1/auth/dev-login`. Hand-written: the OpenAPI spec inlines
@@ -16,6 +17,7 @@ export type DevLoginInput = { email: string; name?: string };
 export type Space = Schemas["Space"];
 export type SpaceInput = Schemas["SpaceInput"];
 export type SpaceMember = Schemas["SpaceMember"];
+export type MemberRole = Schemas["MemberRole"];
 export type Category = Schemas["Category"];
 export type CategoryInput = Schemas["CategoryInput"];
 export type Expense = Schemas["Expense"];

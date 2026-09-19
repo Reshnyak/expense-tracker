@@ -26,16 +26,22 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetByEmail(ctx context.Context, email string) (User, error)
 	UpsertFromGoogle(ctx context.Context, p GoogleUpsert) (User, error)
-	UpsertByEmail(ctx context.Context, email, name string) (User, error)
+	// UpsertByEmail creates a user on first call; on a later call with the same
+	// email, name/firstName/lastName are NOT overwritten (a returning user may
+	// have since edited their own profile — see UpdateProfile).
+	UpsertByEmail(ctx context.Context, email, name string, firstName, lastName *string) (User, error)
 
 	// CreateLocal inserts an email + password account. A duplicate email
 	// returns ErrConflict.
-	CreateLocal(ctx context.Context, email, name, passwordHash string) (User, error)
+	CreateLocal(ctx context.Context, email, name string, firstName, lastName *string, passwordHash string) (User, error)
 	// LocalCredentials returns the user and their bcrypt hash for password
 	// login. It returns ErrNotFound both when no user has that email and when
 	// the user has no password set (a Google-only account) — callers must not
 	// distinguish the two.
 	LocalCredentials(ctx context.Context, email string) (User, string, error)
+
+	// UpdateProfile writes the editable profile fields and returns the user.
+	UpdateProfile(ctx context.Context, id uuid.UUID, in ProfileUpdate) (User, error)
 }
 
 type SpaceRepository interface {
@@ -51,6 +57,8 @@ type CategoryRepository interface {
 	List(ctx context.Context, spaceID uuid.UUID) ([]Category, error)
 	Create(ctx context.Context, spaceID uuid.UUID, in CategoryInput) (Category, error)
 	Get(ctx context.Context, id, spaceID uuid.UUID) (Category, error)
+	Update(ctx context.Context, id, spaceID uuid.UUID, in CategoryInput) (Category, error)
+	Delete(ctx context.Context, id, spaceID uuid.UUID) error
 }
 
 type ExpenseRepository interface {

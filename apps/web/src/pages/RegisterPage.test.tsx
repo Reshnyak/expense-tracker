@@ -50,10 +50,10 @@ function renderPage(node: ReactNode = <RegisterPage />) {
   );
 }
 
-async function fill(user: ReturnType<typeof userEvent.setup>, over: Partial<Record<
-  "name" | "email" | "password" | "confirm",
-  string
->> = {}) {
+async function fill(
+  user: ReturnType<typeof userEvent.setup>,
+  over: Partial<Record<"name" | "email" | "password" | "confirm", string>> = {},
+) {
   await user.type(screen.getByLabelText("Имя (необязательно)"), over.name ?? "Тест");
   await user.type(screen.getByLabelText("Email"), over.email ?? "new@example.com");
   await user.type(screen.getByLabelText("Пароль"), over.password ?? "s3cret-password");

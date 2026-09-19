@@ -10,7 +10,6 @@ import type { DevLoginInput, TokenPair } from "@/shared/api/types";
  */
 export function useDevLogin() {
   return useMutation({
-    mutationFn: (input: DevLoginInput) =>
-      api.post<TokenPair>("/v1/auth/dev-login", input),
+    mutationFn: (input: DevLoginInput) => api.post<TokenPair>("/v1/auth/dev-login", input),
   });
 }

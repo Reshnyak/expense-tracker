@@ -8,6 +8,16 @@ Shared expense journal ("общий журнал расходов"): users sign 
 
 Status: **scaffold**. Every HTTP handler returns `501 Not Implemented` except `GET /healthz`. `internal/service` and `internal/domain` are empty stubs. Dependency versions in `backend/go.mod` and `apps/web/package.json` are indicative until `go mod tidy` / `pnpm install` lock them.
 
+## Git conventions
+
+- **Ветвление — GitHub Flow.** Каждая задача делается в отдельной фича-ветке от `main`
+  (`feat/<кратко>`, `fix/<кратко>`), затем merge в `main` через Pull Request. В `main`
+  напрямую не коммитить.
+- **Коммиты — Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`,
+  `test:`, `build:` …) с опциональным скоупом (`feat(web): …`, `fix(backend): …`).
+  Описание коммита — **на русском**, повелительное наклонение, с маленькой буквы:
+  `feat(web): добавить главный экран трекера расходов`.
+
 ## Repo shape
 
 Monorepo, but the two halves use different tooling:

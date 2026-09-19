@@ -18,12 +18,8 @@ describe("googleLoginUrl", () => {
   });
 
   it("falls back to the default redirect for unsafe paths", () => {
-    expect(googleLoginUrl("//evil.example.com")).toContain(
-      "redirect_uri=%2Fspaces",
-    );
-    expect(googleLoginUrl("https://evil.example.com")).toContain(
-      "redirect_uri=%2Fspaces",
-    );
+    expect(googleLoginUrl("//evil.example.com")).toContain("redirect_uri=%2Fspaces");
+    expect(googleLoginUrl("https://evil.example.com")).toContain("redirect_uri=%2Fspaces");
   });
 });
 
@@ -61,9 +57,11 @@ describe("readCallbackParams", () => {
       state: "xyz",
       error: null,
     });
-    expect(
-      readCallbackParams(new URLSearchParams("error=access_denied")),
-    ).toEqual({ code: null, state: null, error: "access_denied" });
+    expect(readCallbackParams(new URLSearchParams("error=access_denied"))).toEqual({
+      code: null,
+      state: null,
+      error: "access_denied",
+    });
   });
 });
 

@@ -17,8 +17,20 @@ type User struct {
 	ID        uuid.UUID
 	Email     string
 	Name      string
+	FirstName *string
+	LastName  *string
+	Phone     *string
 	AvatarURL *string
 	CreatedAt time.Time
+}
+
+// ProfileUpdate carries the editable profile fields for a user. Name is the
+// display name recomputed by the service from FirstName/LastName.
+type ProfileUpdate struct {
+	FirstName *string
+	LastName  *string
+	Phone     *string
+	Name      string
 }
 
 // Space is a shared expense journal.
@@ -92,6 +104,8 @@ func (t RefreshToken) Active(now time.Time) bool {
 type GoogleUpsert struct {
 	Email     string
 	Name      string
+	FirstName *string
+	LastName  *string
 	AvatarURL *string
 	GoogleSub string
 }

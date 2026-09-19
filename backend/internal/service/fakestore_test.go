@@ -67,37 +67,47 @@ func (r *fakeUsers) GetByEmail(_ context.Context, email string) (domain.User, er
 func (r *fakeUsers) UpsertFromGoogle(_ context.Context, p domain.GoogleUpsert) (domain.User, error) {
 	for _, u := range r.users {
 		if u.Email == p.Email {
-			u.Name = p.Name
+			// name/first/last are only set at creation — a returning user may
+			// have since edited their own profile.
 			u.AvatarURL = p.AvatarURL
 			r.users[u.ID] = u
 			return u, nil
 		}
 	}
-	u := domain.User{ID: uuid.New(), Email: p.Email, Name: p.Name, AvatarURL: p.AvatarURL, CreatedAt: time.Now()}
+	u := domain.User{
+		ID: uuid.New(), Email: p.Email, Name: p.Name,
+		FirstName: p.FirstName, LastName: p.LastName,
+		AvatarURL: p.AvatarURL, CreatedAt: time.Now(),
+	}
 	r.users[u.ID] = u
 	return u, nil
 }
 
-func (r *fakeUsers) UpsertByEmail(_ context.Context, email, name string) (domain.User, error) {
+func (r *fakeUsers) UpsertByEmail(_ context.Context, email, name string, firstName, lastName *string) (domain.User, error) {
 	for _, u := range r.users {
 		if u.Email == email {
-			u.Name = name
-			r.users[u.ID] = u
+			// name/first/last are only set at creation, same reasoning as above.
 			return u, nil
 		}
 	}
-	u := domain.User{ID: uuid.New(), Email: email, Name: name, CreatedAt: time.Now()}
+	u := domain.User{
+		ID: uuid.New(), Email: email, Name: name,
+		FirstName: firstName, LastName: lastName, CreatedAt: time.Now(),
+	}
 	r.users[u.ID] = u
 	return u, nil
 }
 
-func (r *fakeUsers) CreateLocal(_ context.Context, email, name, passwordHash string) (domain.User, error) {
+func (r *fakeUsers) CreateLocal(_ context.Context, email, name string, firstName, lastName *string, passwordHash string) (domain.User, error) {
 	for _, u := range r.users {
 		if u.Email == email {
 			return domain.User{}, domain.ErrConflict
 		}
 	}
-	u := domain.User{ID: uuid.New(), Email: email, Name: name, CreatedAt: time.Now()}
+	u := domain.User{
+		ID: uuid.New(), Email: email, Name: name,
+		FirstName: firstName, LastName: lastName, CreatedAt: time.Now(),
+	}
 	r.users[u.ID] = u
 	r.passwords[u.ID] = passwordHash
 	return u, nil
@@ -114,6 +124,19 @@ func (r *fakeUsers) LocalCredentials(_ context.Context, email string) (domain.Us
 		}
 	}
 	return domain.User{}, "", domain.ErrNotFound
+}
+
+func (r *fakeUsers) UpdateProfile(_ context.Context, id uuid.UUID, in domain.ProfileUpdate) (domain.User, error) {
+	u, ok := r.users[id]
+	if !ok {
+		return domain.User{}, domain.ErrNotFound
+	}
+	u.FirstName = in.FirstName
+	u.LastName = in.LastName
+	u.Phone = in.Phone
+	u.Name = in.Name
+	r.users[id] = u
+	return u, nil
 }
 
 // --- spaces ------------------------------------------------------------------
@@ -207,6 +230,32 @@ func (r *fakeCats) Get(_ context.Context, id, spaceID uuid.UUID) (domain.Categor
 		return domain.Category{}, domain.ErrNotFound
 	}
 	return c, nil
+}
+
+func (r *fakeCats) Update(_ context.Context, id, spaceID uuid.UUID, in domain.CategoryInput) (domain.Category, error) {
+	c, ok := r.cats[id]
+	if !ok || c.SpaceID != spaceID {
+		return domain.Category{}, domain.ErrNotFound
+	}
+	for _, other := range r.cats {
+		if other.SpaceID == spaceID && other.ID != id && other.Name == in.Name {
+			return domain.Category{}, domain.ErrConflict
+		}
+	}
+	c.Name = in.Name
+	c.Color = in.Color
+	c.Icon = in.Icon
+	r.cats[id] = c
+	return c, nil
+}
+
+func (r *fakeCats) Delete(_ context.Context, id, spaceID uuid.UUID) error {
+	c, ok := r.cats[id]
+	if !ok || c.SpaceID != spaceID {
+		return nil
+	}
+	delete(r.cats, id)
+	return nil
 }
 
 // --- expenses ------------------------------------------------------------------

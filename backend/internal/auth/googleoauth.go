@@ -11,11 +11,15 @@ import (
 )
 
 // GoogleProfile is the subset of the Google userinfo payload we consume.
+// given_name/family_name are standard OIDC claims returned alongside `name`
+// whenever the "profile" scope is granted (see NewGoogleAuthenticator).
 type GoogleProfile struct {
-	Sub     string `json:"sub"`
-	Email   string `json:"email"`
-	Name    string `json:"name"`
-	Picture string `json:"picture"`
+	Sub        string `json:"sub"`
+	Email      string `json:"email"`
+	Name       string `json:"name"`
+	GivenName  string `json:"given_name"`
+	FamilyName string `json:"family_name"`
+	Picture    string `json:"picture"`
 }
 
 // GoogleAuthenticator wraps the OAuth2 config for the "sign in with Google" flow.

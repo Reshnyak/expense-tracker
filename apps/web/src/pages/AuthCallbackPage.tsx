@@ -50,7 +50,7 @@ export function AuthCallbackPage() {
   }, [params, callback, loginWithTokens, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted p-4">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardContent>
           {error ? (
